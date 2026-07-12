@@ -1,0 +1,1413 @@
+<!--
+    Korea & Ireland: The Same Moon — 발표용 단일 페이지 프레젠테이션
+    구성: 표지 → 통계 대시보드(Chart.js) → 인트로 → 목차(TOC) → 본문 3개(예술/음식/역사) → 결론
+    조작: 클릭/→ 다음 슬라이드, 우클릭/← 이전 슬라이드(본문에서는 목차로 복귀), Esc 커서 핑 이펙트
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Korea & Ireland: The Same Moon</title>
+    <style>
+        /* 1. 디자인 시스템 & 초기화 (폰트, 다크 테마 기본 색상) */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght=0,300;0,700;0,900;1,300&family=Noto+Sans+KR:wght@300;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+            overflow: hidden;
+        }
+
+        /* 기본 마우스 포인터 숨김 */
+        body, .presentation, .slide, .toc-card, .unified-card, canvas, #image-modal, .card-image-wrapper, .hidden-jump-btn {
+            cursor: none !important;
+        }
+
+        /* 🖱️ 1. 커스텀 마우스 커서 디자인 시스템 수정 */
+        .custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 14px;
+            height: 14px;
+            background-color: rgba(255, 255, 255, 0.1); /* 기본: 반투명 회색 */
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                        height 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                        background-color 0.3s ease,
+                        border 0.3s ease;
+        }
+
+        /* 호버 시: 크기가 확대되고 투명도가 올라간(더 선명해진) 회색 원 */
+        .custom-cursor.hover-active {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* 클릭 시: 투명도가 높은(더 맑고 투명한) 초록색 원으로 변화 */
+        .custom-cursor.click-active {
+            width: 65px;
+            height: 65px;
+            background-color: rgba(46, 213, 115, 0.15);
+            border: 2px solid rgba(46, 213, 115, 0.35);
+        }
+
+        /* Esc 핑 효과 */
+        .cursor-ping {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+        }
+
+        .cursor-ping.animate {
+            animation: ping-burst 0.5s ease-out forwards;
+        }
+
+        @keyframes ping-burst {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+        }
+
+        /* 2. 프레젠테이션 컨테이너 */
+        .presentation {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+            padding: 60px 80px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .slide.fade-transition {
+            transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.8s;
+        }
+
+        /* 3. 공통 헤더 및 푸터 스타일 */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            z-index: 10;
+        }
+
+        .slide-tag {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .slide-tag span { color: #5352ed; }
+
+        .slide-footer {
+            position: absolute; /* 절대 위치 */
+            bottom: 30px;       /* 하단에서 40px 위 */
+            left: 80px;         /* 좌측 패딩과 동일 */
+            right: 80px;        /* 우측 패딩과 동일 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            z-index: 10;
+        }
+
+        /* 4. 타이포그래피 & 레이아웃 세부 스타일 */
+        /* 본문 컨테이너 수정 */
+        .content-container {
+            flex: 1;
+            display: flex;
+            align-items: flex-start; /* 'stretch' 대신 'flex-start'로 변경하여 높이 강제 방지 */
+            gap: 50px;
+            padding: 60px 0 80px 0;
+            position: relative;
+            width: 100%;
+            overflow: hidden; 
+        }
+
+        .left-col {
+            flex: 1;
+            padding-left: 0;
+        }
+
+        .right-col {
+            flex: 1.2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            align-self: center; 
+        }
+
+        h1.main-title {
+            font-size: 4.8rem; 
+            font-weight: 900;
+            line-height: 1.3;  
+            margin-bottom: 25px;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 100;
+            opacity: 1;
+        }
+
+        /* 카드 그리드(이미지+설명)가 들어가는 본문 슬라이드는 제목을 조금 줄여
+        카드가 세로 공간을 넉넉히 확보하도록 함 (설명 잘림 방지) */
+        #slide-arts h1.main-title,
+        #slide-cuisine h1.main-title,
+        #slide-history h1.main-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .dot {
+            color: #5352ed;
+            display: inline-block;
+            /* 애니메이션이 절대 꺼지지 않도록 !important 사용 */
+            animation: dot-pulse 1.5s infinite ease-in-out !important;
+        }
+
+        p.description {
+            font-size: 1.6rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+        }
+
+        /* 5. 비주얼 오브젝트 */
+        .glow-sphere {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(83, 82, 237, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+            filter: blur(20px);
+            animation: pulse 4s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.2); opacity: 0.9; }
+        }
+
+        .giant-text-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .giant-text {
+            font-size: 10rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            line-height: 0.9;
+        }
+
+        .giant-text.outline {
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+        }
+
+        .giant-text.fill {
+            /* 글자색을 약간 회색으로 하여 발광과 대비를 줌 */
+            color: #f0f0f0; 
+            
+            /* 기본 상태를 애니메이션의 중간 정도로 설정 */
+            text-shadow: 
+                0 0 15px rgba(255, 255, 255, 0.3),
+                0 0 40px rgba(255, 255, 255, 0.2),
+                0 0 80px rgba(255, 255, 255, 0.1);
+
+            /* 3초 동안 부드럽게 숨 쉬는 효과 */
+            animation: glow-pulse 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes glow-pulse {
+            /* 어두울 때: 빛을 좁고 희미하게 */
+            from { 
+                text-shadow: 
+                    0 0 10px rgba(255, 255, 255, 0.1), 
+                    0 0 20px rgba(255, 255, 255, 0.05), 
+                    0 0 40px rgba(255, 255, 255, 0.02); 
+            }
+            /* 밝을 때: 빛을 넓고 강하게 퍼뜨림 */
+            to { 
+                text-shadow: 
+                    0 0 30px rgba(255, 255, 255, 0.6), 
+                    0 0 100px rgba(255, 255, 255, 0.4), 
+                    0 0 300px rgba(255, 255, 255, 0.3); 
+            }
+        }
+        
+        /* 통일된 2열 카드 그리드 시스템 */
+        .unified-grid {
+            display: grid;
+            /* 화면이 400px보다 작아지면 자동으로 세로 정렬됨 */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 35px;
+            width: 100%;
+            opacity: 1;
+            transition: opacity 0.4s ease;
+        }
+        .card-image-wrapper {
+            position: relative;
+            width: 100%;
+            /* height: 35%; 대신 aspect-ratio 사용 (비율 고정) */
+            aspect-ratio: 16 / 9; 
+            overflow: hidden;
+            background-color: #111;
+            flex-shrink: 0; /* 부모가 flex일 때 높이가 줄어드는 것 방지 */
+        }
+
+        /* 카드 높이 문제 해결을 위해 추가 */
+        .unified-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%; /* 카드가 그리드 높이를 꽉 채우도록 설정 */
+        }
+
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.75;
+            transition: transform 0.5s ease;
+        }
+
+        .unified-card:hover .card-img { transform: scale(1.05); }
+
+        .card-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            border-radius: 30px;
+            z-index: 2;
+        }
+        .card-badge.kor { background: #5352ed; color: #fff; }
+        .card-badge.ire { background: #2ed573; color: #fff; }
+
+        .card-info {
+            padding: 25px 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .card-info h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: #ffffff; }
+        .card-info p { font-size: 0.95rem; color: rgba(255, 255, 255, 0.6); line-height: 1.6; font-weight: 300; }
+
+        /* 결론 슬라이드 */
+        .conclusion-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .conclusion-list li {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            padding-left: 25px;
+            position: relative;
+            font-weight: 300;
+        }
+        .conclusion-list li::before {
+            content: "✓"; position: absolute; left: 0; color: #2ed573; font-weight: 900;
+        }
+        .conclusion-list li strong { color: #ffffff; font-weight: 700; margin-right: 10px; }
+
+        .quote-mark {
+            font-size: 5rem; font-family: 'Poppins', sans-serif; color: rgba(46, 213, 115, 0.3);
+            position: absolute; top: -20px; left: 30px; line-height: 1;
+        }
+
+        /* 라이트박스 모달 */
+        .img-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .img-modal.active { opacity: 1; pointer-events: auto; }
+        .img-modal img {
+            max-width: 85%; max-height: 85%; object-fit: contain; border-radius: 16px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); transform: scale(0.9) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .img-modal.active img { transform: scale(1) translateY(0); }
+
+        /* TOC (목차) 슬라이드 배치 레이아웃 */
+        #slide-toc .content-container {
+            position: absolute;
+            top: 60px; left: 0; width: 100%; height: calc(100% - 115px); padding: 0; gap: 0; display: flex;
+        }
+        
+        .toc-left {
+            flex: 1; height: 100%; padding: 60px 60px 45px 80px; 
+            display: flex; flex-direction: column; justify-content: space-between;
+            background: linear-gradient(to bottom, rgba(5,5,5,1), rgba(12,20,15,1));
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .category-tag { color: #2ed573; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; margin-bottom: 15px; }
+        .toc-footer-stats { display: flex; gap: 60px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 25px; }
+        .toc-footer-stats .num { font-size: 2.5rem; font-weight: 900; color: #2ed573; line-height: 1; }
+        .toc-footer-stats .lbl { font-size: 0.8rem; color: rgba(255, 255, 255, 0.4); margin-top: 8px; letter-spacing: 1px; }
+
+        .toc-right { flex: 1.2; height: 100%; display: flex; flex-direction: column; background: #090909; transition: opacity 0.4s ease; }
+        .toc-card {
+            flex: 1; border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding: 0 60px;
+            display: flex; align-items: center; gap: 40px; position: relative;
+            transition: background-color 0.4s ease;
+        }
+        .toc-card::before {
+            content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%;
+            background-color: #2ed573; transform: scaleY(0); transition: transform 0.3s ease;
+        }
+        .toc-card:last-child { border-bottom: none; }
+        .toc-card:hover { background: rgba(46, 213, 115, 0.02); }
+        .toc-card:hover::before { transform: scaleY(1); }
+
+        .toc-num {
+            font-size: 3.5rem; font-weight: 900; color: rgba(255, 255, 255, 0.04);
+            font-family: 'Poppins', sans-serif; transition: color 0.3s ease, transform 0.3s ease;
+        }
+        .toc-card:hover .toc-num { color: rgba(46, 213, 115, 0.2); transform: scale(1.05); }
+        .toc-info { flex: 1; }
+        .toc-step { font-size: 0.8rem; color: #2ed573; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+        
+        .target-anchor {
+            font-size: 1.5rem; color: #ffffff; margin-bottom: 10px; font-weight: 700;
+            display: block; line-height: 1.3;
+            font-weight: 900;
+        }
+        .toc-info p { font-size: 0.95rem; color: rgba(255, 255, 255, 0.5); line-height: 1.5; }
+        .toc-arrow { font-size: 1.8rem; color: rgba(255, 255, 255, 0.1); transition: all 0.3s ease; }
+        .toc-card:hover .toc-arrow { color: #2ed573; transform: translateX(8px); }
+
+        /* 차트 대시보드 스타일 */
+        .chart-dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; width: 100%; height: 75%; }
+        
+        .chart-card { 
+            background: rgba(255, 255, 255, 0.02); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            border-radius: 20px; 
+            padding: 25px; 
+            display: flex; 
+            flex-direction: column; 
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .slide.active .chart-card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide.active .chart-card:nth-child(1) { transition-delay: 0.1s; }
+        .slide.active .chart-card:nth-child(2) { transition-delay: 0.2s; }
+        .slide.active .chart-card:nth-child(3) { transition-delay: 0.3s; }
+        .chart-card h4 { font-size: 1.3rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 20px; font-weight: 500; border-left: 3px solid #5352ed; padding-left: 10px; }
+        .canvas-container { position: relative; flex: 1; width: 100%; min-height: 220px; }
+        .info-summary-card { justify-content: space-between; }
+        .metric-row { display: flex; flex-direction: column; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 10px; margin-bottom: 10px; }
+        .metric-row:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
+        .m-title { font-size: 0.8rem; color: rgba(255, 255, 255, 0.4); margin-bottom: 4px; }
+        .m-values { font-size: 0.95rem; color: rgba(255, 255, 255, 0.8); display: flex; gap: 8px; }
+        .m-values .bar { color: rgba(255, 255, 255, 0.15); }
+        .highlight-kr { color: #5352ed; font-weight: bold; }
+        .highlight-ie { color: #2ed573; font-weight: bold; }
+
+        /* 표지 슬라이드 디자인 */
+        .intro-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; }
+        .intro-subtitle { font-size: 1.2rem; font-weight: 700; letter-spacing: 6px; color: #2ed573; margin-bottom: 20px; text-transform: uppercase; }
+        .intro-title { font-size: 12rem; font-weight: 900; line-height: 1.15; letter-spacing: -2px; margin-bottom: 30px; }
+        .intro-desc { font-size: 1.2rem; color: rgba(255,255,255,0.6); max-width: 600px; line-height: 1.8; font-weight: 300; }
+        .intro-hint { position: absolute; bottom: 20px; font-size: 0.85rem; color: rgba(255,255,255,0.3); letter-spacing: 2px; animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* FLIP 기법용 비행 타이틀 스타일 */
+        .flying-title {
+            position: fixed;
+            font-weight: 900;
+            line-height: 1.3;
+            letter-spacing: -1px;
+            color: #ffffff;
+            z-index: 9999;
+            pointer-events: none;
+            transform-origin: left top;
+            white-space: nowrap;
+        }
+
+        /* 1. 결론 슬라이드 배경 강제 설정 */
+        #slide-conclusion {
+            position: relative; /* 자식 요소들의 기준점 */
+            overflow: hidden;
+        }
+
+        #slide-conclusion .conclusion-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* 이미지 경로 */
+            background-image: url('https://cdn.pixabay.com/photo/2022/01/02/15/34/moon-6910471_1280.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transform: scaleX(-1);
+            
+            /* 투명도 조절 */
+            opacity: 0; 
+            transition: opacity 1.5s ease-in-out;
+            
+            /* 레이어 위치: 콘텐츠 뒤로 */
+            z-index: 0; 
+            pointer-events: none;
+        }
+
+        /* 활성화 시 투명도 적용 */
+        #slide-conclusion.active .conclusion-bg {
+            opacity: 0.35;
+        }
+
+        /* 2. 콘텐츠 컨테이너가 배경을 가리지 않도록 배경색 제거 */
+        #slide-conclusion .content-container {
+            position: relative;
+            z-index: 1; /* 배경(0)보다 위에 배치 */
+            background: transparent !important; /* 혹시 모를 배경색 제거 */
+        }
+
+        .conclusion-body-wrapper {
+            display: flex;
+            align-items: stretch; 
+            gap: 60px;
+            width: 100%;
+        }
+
+        .conclusion-left-body {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; 
+        }
+
+        .conclusion-right-body {
+            flex: 1; /* 기존 0.8에서 1로 변경하여 공간 최대 활용 */
+            display: flex;
+            align-items: stretch;
+            padding: 0; /* 불필요한 여백 제거 */
+        }
+
+        .conclusion-left-body .description {
+            margin-top: auto;
+            padding-top: 30px;
+            margin-bottom: 0;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .final-quote-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            /* 고정된 px 대신 vh를 사용하여 화면 높이에 따라 패딩이 자동 조절됨 */
+            padding: 8vh 5vw; 
+            text-align: center;
+            width: 100%;
+            /* 내용이 넘칠 경우를 대비해 height 대신 min-height 사용 */
+            min-height: 200px; 
+            position: relative; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            /* 카드가 화면 밖으로 나가지 않도록 강제 제한 */
+            max-height: 80%; 
+        }
+
+        .final-quote-card::before {
+            content: "“";
+            position: absolute;
+            top: 30px;    /* 위쪽 고정 */
+            left: 40px;   /* 왼쪽 고정 */
+            font-size: 5rem;
+            font-family: 'Poppins', sans-serif;
+            color: #2ed573;
+            opacity: 0.4;
+        }
+
+        .final-quote-card::after {
+            content: "“";
+            position: absolute;
+            bottom: 30px; /* 위쪽과 대칭되는 하단 위치 */
+            right: 40px;  /* 왼쪽과 대칭되는 우측 위치 */
+            font-size: 5rem;
+            font-family: 'Poppins', sans-serif;
+            color: #2ed573;
+            opacity: 0.4;
+            transform: rotate(180deg); /* 180도 회전시켜 완벽한 대칭 구현 */
+        }
+
+        .final-quote-card p { font-size: 1.9rem; font-weight: 700; line-height: 1.5; color: #ffffff; font-style: italic; }
+
+        /* 글로벌 SVG 오버레이 레이어 */
+        .trace-svg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        .trace-path {
+            fill: none;
+            stroke: #2ed573;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 6px rgba(46, 213, 115, 0.5));
+        }
+
+        /* '목차로 돌아가기' 히든 버튼 위치 고정 */
+        .hidden-jump-btn {
+            position: absolute;
+            bottom: 45px; /* 패딩 값과 맞춰서 하단 간격 조정 */
+            left: 38%;   /* 부모의 padding-left와 맞춰서 왼쪽 정렬 */
+            width: 200px; 
+            height: 40px;
+            z-index: 100; /* 다른 요소 위에 오도록 z-index 높임 */
+            
+            /* 평소 상태: 투명하고 테두리 없음 */
+            opacity: 0; 
+            border: none;
+            background: none;
+            transition: opacity 0.3s ease;
+            
+            /* 글자 스타일 */
+            font-weight: bold; /* 굵은 글자 */
+            color: #8888883e;       /* 연한 회색 글자 */
+            font-size: 1.2rem;
+            padding: 10px;
+        }
+
+        .hidden-jump-btn:hover {
+            opacity: 1; /* 보이게 설정 */
+        }
+
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* =========================================
+           반응형 디자인 (모바일 대응, 화면 너비 800px 이하)
+           ========================================= */
+        @media (max-width: 800px) {
+            /* 1. 슬라이드 내부 여백 축소 */
+            .slide { padding: 40px 20px !important; }
+            
+            /* 2. 타이틀 크기 조정 */
+            h1.main-title { font-size: 2.2rem !important; margin-bottom: 15px !important; }
+            
+            /* 3. 그리드 간격 조정 */
+            .unified-grid {
+                grid-template-columns: 1fr !important; /* 모바일 강제 1열 */
+                gap: 20px !important;
+            }
+
+            /* 4. 본문 설명 텍스트 */
+            p.description { font-size: 0.9rem !important; }
+
+            /* 5. 차트 대시보드 대응 */
+            .chart-dashboard { 
+                grid-template-columns: 1fr !important; 
+                height: auto !important; 
+            }
+            
+            /* 6. 기타 불필요 요소 숨김 */
+            .giant-text { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 화면을 따라다니는 인터랙티브 커스텀 커서 원 -->
+    <div class="custom-cursor"></div>
+
+    <!-- SVG 마커 정의 부분 -->
+    <svg class="trace-svg-overlay">
+        <defs>
+            <!-- 정방향 (TOC -> 본문): 오른쪽을 가리킴 -->
+            <marker id="arrow-forward" markerWidth="10" markerHeight="10" refX="6" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,1 L8,5 L0,9 L2,5 Z" fill="#2ed573"/>
+            </marker>
+            <!-- 역방향 (본문 -> TOC): 왼쪽을 가리킴 -->
+            <marker id="arrow-backward" markerWidth="10" markerHeight="10" refX="4" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,5 L8,1 L6,5 L8,9 Z" fill="#2ed573"/> 
+            </marker>
+        </defs>
+        <path class="trace-path" d=""></path>
+    </svg>
+
+    <div class="presentation">
+
+        <!-- SLIDE 0: COVER MAIN -->
+        <div class="slide active" id="slide-intro">
+            <div class="slide-header">
+                <div class="slide-tag">PROJECT <span>I</span> START</div>
+                <div>🌙</div>
+            </div>
+            <div class="intro-container">
+                <div class="glow-sphere" style="width: 450px; height: 450px; background: radial-gradient(circle, rgba(46, 213, 115, 0.25) 0%, rgba(83, 82, 237, 0.15) 50%, rgba(0,0,0,0) 70%);"></div>
+                <div class="intro-subtitle">Comparative & Contrast Exploration</div>
+                <h1 class="intro-title">Korea & Ireland<span class="dot">.</span></h1>
+                <p class="intro-desc">Though far apart,<br>we share the same moon.</p>
+                <div class="intro-hint">PRESS ARROW KEY OR SPACE TO START</div>
+            </div>
+            <div class="slide-footer">
+                <div>Global Culture Exhibition</div>
+                <div>0 / 7</div>
+            </div>
+        </div>
+
+        <!-- SLIDE 1: Hook (Chart 대시보드) -->
+        <div class="slide" id="slide-chart-dashboard">
+            <div class="slide-header">
+                <div class="slide-tag">INTRODUCTION <span>I</span> 02</div>
+                <div>📊</div>
+            </div>
+            <div class="content-container" style="flex-direction: column; align-items: flex-start;">
+                <h1 class="main-title" style="margin-bottom: 25px;">General & Climate Comparison<span class="dot">.</span></h1>
+                <div class="chart-dashboard">
+                    <div class="chart-card">
+                        <h4>Total Population (Million)</h4>
+                        <div class="canvas-container"><canvas id="populationChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Climate Profile (Temperature)</h4>
+                        <div class="canvas-container"><canvas id="climateChart"></canvas></div>
+                    </div>
+                    <div class="chart-card info-summary-card">
+                        <h4>Key Metrics At a Glance</h4>
+                        <div class="metric-row"><span class="m-title">Area</span><div class="m-values"><span>IE: 70.2k km²</span><span class="bar">|</span><span class="highlight-kr">KR: 100.3k km²</span></div></div>
+                        <div class="metric-row"><span class="m-title">Urbanization</span><div class="m-values"><span>IE: 64.3%</span><span class="bar">|</span><span class="highlight-kr">KR: 81.2%</span></div></div>
+                        <div class="metric-row"><span class="m-title">Birth Rate</span><div class="m-values"><span class="highlight-ie">IE: 10.30 ‰</span><span class="bar">|</span><span>KR: 4.50 ‰</span></div></div>
+                        <div class="metric-row"><span class="m-title">Rain Days</span><div class="m-values"><span class="highlight-ie">IE: 15.2 Days</span><span class="bar">|</span><span>KR: 6.6 Days</span></div></div>
+                        <div class="metric-row"><span class="m-title">Avg Age</span><div class="m-values"><span>IE: 40.5 Yrs</span><span class="bar">|</span><span class="highlight-kr">KR: 47.0 Yrs</span></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>Statistical Overview</div><div>1 / 7</div></div>
+        </div>
+
+        <!-- SLIDE 2: INTRO -->
+        <div class="slide" id="slide-1">
+            <div class="slide-header">
+                <div class="slide-tag">CULTURE <span>I</span> 01</div>
+                <div>🌐</div>
+            </div>
+            <div class="content-container">
+                <div class="left-col">
+                    <h1 class="main-title">Though far apart,<br>We share the same moon<span class="dot">.</span></h1>
+                    <p class="description">Geographically remote, South Korea and Ireland. But the two countries share a surprisingly commonalities.</p>
+                </div>
+                <div class="right-col">
+                    <!--<div class="glow-sphere"></div>-->
+                    <div class="giant-text-wrapper">
+                        <div class="giant-text outline">KOREA</div>
+                        <div class="giant-text fill">SHARED</div>
+                        <div class="giant-text outline">IRELAND</div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>Compare / Contrast Project</div><div>2 / 7</div></div>
+        </div>
+
+        <!-- SLIDE 3: TABLE OF CONTENTS (TOC) -->
+        <div class="slide" id="slide-toc">
+            <div class="content-container">
+                <div class="toc-left">
+                    <div class="toc-left-content">
+                        <div class="category-tag">Overview</div>
+                        <h1 class="main-title" id="toc-main-title">Korea & Ireland<br>Comparison<span class="dot">.</span></h1>
+                        <p class="description" id="toc-description" style="max-width: 90%;">Beyond geographic distance, it is a journey to explore the hidden cultural bonds and historical commonalities that the two countries share.</p>
+                    </div>
+                    <div class="toc-footer-stats">
+                        <div class="stat-item"><span class="num">03</span><span class="lbl"> Key Chapters</span></div>
+                        <div class="stat-item"><span class="num">02</span><span class="lbl"> Nations</span></div>
+                    </div>
+                    <!-- [추가] 빨간 상자 위치에 들어갈 버튼 -->
+                    <button id="jump-to-end" class="hidden-jump-btn">Go to Conclusion</button>
+                </div>
+                
+                <div class="toc-right" id="toc-right-menu">
+                    <div class="toc-card" data-target="4">
+                        <div class="toc-num">01</div>
+                        <div class="toc-info">
+                            <div class="toc-step">CHAPTER 02 — ARTS</div>
+                            <span class="target-anchor">01. Interactive<br>Traditional Arts</span>
+                            <p style="font-size: 1.3rem;">The two-way audience participation culture of Pansori's chuimsae and Irish seisioun.</p>
+                        </div>
+                        <div class="toc-arrow">→</div>
+                    </div>
+
+                    <div class="toc-card" data-target="5">
+                        <div class="toc-num">02</div>
+                        <div class="toc-info">
+                            <div class="toc-step">CHAPTER 03 — CUISINE</div>
+                            <span class="target-anchor">02. Comforting<br>Broth Culture</span>
+                            <p style="font-size: 1.3rem;">Soul foods: jjigae, gukbap, and Irish stews, that withstand the cold and strengthen bonds.</p>
+                        </div>
+                        <div class="toc-arrow">→</div>
+                    </div>
+
+                    <div class="toc-card" data-target="6">
+                        <div class="toc-num">03</div>
+                        <div class="toc-info">
+                            <div class="toc-step">CHAPTER 04 — HISTORY</div>
+                            <span class="target-anchor">03. Tragic History<br>of Division</span>
+                            <p style="font-size: 1.3rem;">The similar pain of the division of the land by foreign powers and the subsequent armed conflict.</p>
+                        </div>
+                        <div class="toc-arrow">→</div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>Table of Contents</div><div>3 / 7</div></div>
+        </div>
+
+        <!-- SLIDE 4: BODY 1 (Arts) -->
+        <div class="slide" id="slide-arts">
+            <div class="slide-header"><div class="slide-tag">ARTS <span>I</span> 04</div><div>🎭</div></div>
+            <div class="content-container" style="flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+                <h1 class="main-title" id="title-arts">01. Interactive<br>Traditional Arts<span class="dot">.</span></h1>
+                <div class="unified-grid">
+                    <div class="unified-card theme-kor">
+                        <div class="card-image-wrapper">
+                            <img src="https://www.gugak.go.kr/ency/media/thumb/7716" alt="Pansori" class="card-img">
+                            <div class="card-badge kor">KOREA</div>
+                        </div>
+                        <div class="card-info">
+                            <h3>Pansori & Chuimsae</h3>
+                            <p>The singer, sorikkun, actively encourages audience participation by using chuimsae.</p>
+                        </div>
+                    </div>
+                    <div class="unified-card theme-ire">
+                        <div class="card-image-wrapper">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Irish_Folk_session_The_Old_Dubliner_Hamburg_337-0007-hinnerk-ruemenapf.jpg" alt="Seisiún" class="card-img">
+                            <div class="card-badge ire">IRELAND</div>
+                        </div>
+                        <div class="card-info">
+                            <h3>Traditional Folk Seisiún</h3>
+                            <p>Traditional folk Seisiún brings musicians and audience together in pubs freely to enjoy dances and songs, creating a sense of solidarity.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>Interactive Traditional Arts</div><div>4 / 7</div></div>
+        </div>
+
+        <!-- SLIDE 5: BODY 2 (Cuisine) -->
+        <div class="slide" id="slide-cuisine">
+            <div class="slide-header"><div class="slide-tag">CUISINE <span>I</span> 05</div><div>🍲</div></div>
+            <div class="content-container" style="flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+                <h1 class="main-title" id="title-cuisine">02. Comforting<br>Broth Culture<span class="dot">.</span></h1>
+                <div class="unified-grid">
+                    <div class="unified-card theme-kor">
+                        <div class="card-image-wrapper">
+                            <img src="https://i0.wp.com/www.spicetheplate.com/wp-content/uploads/2017/01/Pork-Belly-Kimchi-Stew-12.jpg?fit=680%2C1020&ssl=1" alt="Kimchi-jjigae" class="card-img">
+                            <div class="card-badge kor">KOREA</div>
+                        </div>
+                        <div class="card-info">
+                            <h3>Kimchi-jjigae & Gukbap</h3>
+                            <p>These are 'soul foods' that bring family members together to endure harsh weather.</p>
+                        </div>
+                    </div>
+                    <div class="unified-card theme-ire">
+                        <div class="card-image-wrapper">
+                            <img src="https://www.theirishmanswife.com/wp-content/uploads/2024/04/Beef-Guinness-Stew-2.jpg" alt="Irish Stew" class="card-img">
+                            <div class="card-badge ire">IRELAND</div>
+                        </div>
+                        <div class="card-info">
+                            <h3>Irish Stew & Coddle</h3>
+                            <p>Made by slowly simmering lamb or beef with potatoes and vegetables, serving as a comfort food.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>Broth-Based Food Cultures</div><div>5 / 7</div></div>
+        </div>
+
+        <!-- SLIDE 6: BODY 3 (History) -->
+        <div class="slide" id="slide-history">
+            <div class="slide-header"><div class="slide-tag">HISTORY <span>I</span> 06</div><div>⚔️</div></div>
+            <div class="content-container" style="flex-direction: column; align-items: flex-start; justify-content: flex-start;">
+                <h1 class="main-title" id="title-history">03. Tragic History<br>of Division<span class="dot">.</span></h1>
+                <div class="unified-grid">
+                    <div class="unified-card theme-kor">
+                        <div class="card-image-wrapper">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/070401_Panmunjeom3.jpg/1280px-070401_Panmunjeom3.jpg" alt="Korea DMZ" class="card-img">
+                            <div class="card-badge kor">KOREA</div>
+                        </div>
+                        <div class="card-info">
+                            <h3>The 38th Parallel & War</h3>
+                            <p>Divided along the 38th parallel, leading to the Korean War.</p>
+                        </div>
+                    </div>
+                    <div class="unified-card theme-ire">
+                        <div class="card-image-wrapper">
+                            <img src="https://cloudfront-us-east-2.images.arcpublishing.com/reuters/ROBWR2WA2RLZJPCTHTHJZZPFOE.jpg" alt="Northern Ireland" class="card-img">
+                            <div class="card-badge ire">IRELAND</div>
+                        </div>
+                        <div class="card-info">
+                            <h3>British Rule & "The Troubles"</h3>
+                            <p>Divided after British colonial rule, leading to the armed conflict called 'The Troubles'.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>Tragic Histories of Division</div><div>6 / 7</div></div>
+        </div>
+
+        <!-- SLIDE 7: CONCLUSION -->
+        <div class="slide" id="slide-conclusion">
+            <div class="conclusion-bg"></div>
+
+            <div class="slide-header"><div class="slide-tag">CONCLUSION <span>I</span> 07</div><div>✨</div></div>
+
+            <div class="content-container" style="flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 40px;">
+                <h1 class="main-title" style="margin-bottom: 0;">Understanding Through<br>Commonalties<span class="dot">.</span></h1>
+                
+                <div class="conclusion-body-wrapper">
+                    <div class="conclusion-left-body">
+                        <ul class="conclusion-list" style="margin-top: 5px">
+                            <li style="font-size: 1.5rem;"><strong>Interactive Arts</strong>: The two-way communication and bond between Pansori and Seisiún</li>
+                            <li style="font-size: 1.5rem;"><strong>Broth-Based Food</strong>: The soup of the soul that melted the body and mind during the hard times</li>
+                            <li style="font-size: 1.5rem;"><strong>History of Division</strong>: The similar pain of division and conflict caused by foreign powers</li>
+                        </ul>
+                        <p class="description" style="margin-top: 20px; font-size: 1.2rem;">The cultural characteristics stemming from human sociality and solidarity are surprisingly similar. <br>By delving deeply into the commonalities of other countries, we can more easily <br>understand and embrace unfamiliar foreign cultures.</p>
+                    </div>
+                    
+                    <div class="conclusion-right-body">
+                        <div class="final-quote-card">
+                            <p>Though far apart,<br>we share the beauty of<br>the same moon.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-footer"><div>The Same Moon Over Korea and Ireland</div><div>7 / 7</div></div>
+        </div>
+    </div>
+
+    <!-- 이미지 확대용 라이트박스 모달 -->
+    <div id="image-modal" class="img-modal">
+        <img id="modal-img" src="" alt="Zoomed Image">
+    </div>
+
+    <script>
+        // =========================================
+        // 1. 전역 상태 & Chart.js 데이터
+        // =========================================
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+
+        // Chart.js 인스턴스 (슬라이드 재방문 시 destroy 후 재생성하기 위해 참조 보관)
+        let populationChartInstance = null;
+        let climateChartInstance = null;
+
+        const populationData = {
+            labels: ['Ireland', 'South Korea'],
+            datasets: [{
+                label: 'Population (Millions)',
+                data: [5.39, 51.75],
+                backgroundColor: ['rgba(46, 213, 115, 0.65)', 'rgba(83, 82, 237, 0.65)'],
+                borderColor: ['#2ed573', '#5352ed'],
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        };
+
+        const climateData = {
+            labels: ['Day Temp (°C)', 'Night Temp (°C)', 'Water Temp (°C)', 'Sun Hours (Daily)'],
+            datasets: [
+                { label: 'Ireland', data: [13.0, 6.8, 11.3, 3.7], borderColor: '#2ed573', backgroundColor: 'rgba(46, 213, 115, 0.1)', borderWidth: 3, tension: 0.3, fill: true },
+                { label: 'South Korea', data: [18.4, 9.8, 12.8, 6.3], borderColor: '#5352ed', backgroundColor: 'rgba(83, 82, 237, 0.1)', borderWidth: 3, tension: 0.3, fill: true }
+            ]
+        };
+
+        // 두 차트(막대/라인)가 공통으로 쓰는 기본 옵션 생성 함수
+        // (호출할 때마다 새 객체를 반환하므로 차트별로 안전하게 커스터마이징 가능)
+        const getAnimationOptions = () => ({
+            animations: {
+                y: { easing: 'easeOutQuart', duration: 1000, delay: 500 }
+            },
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true } }
+        });
+
+        // Hook(대시보드) 슬라이드 진입 시 인구/기후 차트를 그린다.
+        // 슬라이드를 재방문할 때 기존 인스턴스를 destroy하여 캔버스 중첩 렌더링을 방지.
+        function renderDashboardCharts() {
+            if (populationChartInstance) populationChartInstance.destroy();
+            if (climateChartInstance) climateChartInstance.destroy();
+            const ctxPop = document.getElementById('populationChart').getContext('2d');
+            populationChartInstance = new Chart(ctxPop, { type: 'bar', data: populationData, options: getAnimationOptions() });
+            const ctxCli = document.getElementById('climateChart').getContext('2d');
+            const climateOptions = getAnimationOptions();
+            climateOptions.plugins = { legend: { position: 'top', labels: { boxWidth: 12 } } };
+            climateChartInstance = new Chart(ctxCli, { type: 'line', data: climateData, options: climateOptions });
+        }
+
+        // =========================================
+        // 2. 슬라이드 전환 로직
+        // =========================================
+
+        // 지정된 두 슬라이드 사이 이동일 경우에만 페이드(fade) 트랜지션 클래스를 부여.
+        // (그 외 구간은 기본 슬라이드 트랜지션을 사용)
+        function checkAndApplyFadeEffect(currentIdx, nextIdx) {
+            slides.forEach(slide => slide.classList.remove('fade-transition'));
+            const isTargetRoute = 
+                (currentIdx === 0 && nextIdx === 1) || (currentIdx === 1 && nextIdx === 0) ||
+                (currentIdx === 1 && nextIdx === 2) || (currentIdx === 2 && nextIdx === 1) ||
+                (currentIdx === 2 && nextIdx === 3) || (currentIdx === 3 && nextIdx === 2) ||
+                (currentIdx === 5 && nextIdx === 6) || (currentIdx === 6 && nextIdx === 5);
+            if (isTargetRoute) {
+                slides[currentIdx].classList.add('fade-transition');
+                slides[nextIdx].classList.add('fade-transition');
+            }
+        }
+
+        // FLIP 애니메이션에 쓰인 임시 타이틀(flyer) 요소를 페이드 아웃 후 제거
+        function removeFlyerWithFade(flyer) {
+            flyer.classList.add('fade-out');
+
+            // 애니메이션이 끝나면 실행되는 이벤트 리스너 추가
+            flyer.addEventListener('transitionend', () => {
+                flyer.remove();
+            }, { once: true }); // 딱 한 번만 실행하고 리스너 제거
+        }
+
+        // 좌클릭(다음 슬라이드) 전역 리스너
+        // 링크/버튼/카드/캔버스 등 상호작용 요소를 클릭한 경우에는 슬라이드 전환을 하지 않는다.
+        // TOC(3), arts(4), cuisine(5) 슬라이드는 자체 클릭 동작이 있으므로 여기서 제외.
+        document.addEventListener('click', (e) => {
+            const isInteractive = e.target.closest('a') || 
+                                e.target.closest('button') || 
+                                e.target.closest('.toc-card') || 
+                                e.target.closest('.unified-card') || 
+                                e.target.closest('canvas') || 
+                                e.target.closest('#image-modal') ||
+                                window.getComputedStyle(e.target).cursor === 'pointer';
+
+            if (!isInteractive && !(currentSlide === 4 || currentSlide === 5 || currentSlide === 3)) { showSlide(currentSlide + 1); }
+        });
+
+        // 우클릭(뒤로가기) 전역 리스너
+        // - 본문 슬라이드(arts/cuisine/history)에서는 목차(TOC)로 되돌아가는 애니메이션 실행
+        // - 그 외 슬라이드에서는 바로 이전 슬라이드로 이동
+        // 개별 슬라이드마다 리스너를 걸지 않고 document 레벨에서 한 번만 처리해 중복 실행을 방지한다.
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); 
+            
+            // 이미지 확대 모달이 열려있다면 무시
+            const modal = document.getElementById('image-modal');
+            if (modal.classList.contains('active')) return;
+
+            // 본문 슬라이드(4, 5, 6)일 경우
+            if (currentSlide === 4 || currentSlide === 5 || currentSlide === 6) {
+                const activeSlide = document.querySelector('.slide.active');
+                animateSlideToTOC(activeSlide);
+            } 
+            // 본문 슬라이드가 아닐 때만 이전으로 이동
+            else if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        });
+
+        // index번째 슬라이드로 이동 (배열 범위를 벗어나면 순환).
+        // 대시보드 슬라이드로 진입할 때는 차트를 다시 그린다.
+        function showSlide(index) {
+            const nextSlide = (index + slides.length) % slides.length;
+            checkAndApplyFadeEffect(currentSlide, nextSlide);
+            
+            slides[currentSlide].classList.remove('active');
+            currentSlide = nextSlide;
+            
+            const currentSlideEl = slides[currentSlide];
+            currentSlideEl.classList.add('active');
+            
+            if (currentSlideEl.id === 'slide-chart-dashboard') { setTimeout(renderDashboardCharts, 50); }
+        }
+
+        // =========================================
+        // 3. TOC ↔ 본문 FLIP 전환 애니메이션
+        //    (제목 텍스트가 화면을 가로질러 날아가는 것처럼 보이게 하는 기법)
+        // =========================================
+
+        // 다이내믹 화살표 트레이싱 엔진
+        function animateArrowTrace(startX, startY, endX, endY, isReverse = false, callback = null) {
+            const path = document.querySelector('.trace-path');
+            
+            if (!isReverse) {
+                path.setAttribute('marker-end', 'url(#arrow-forward)');
+                path.removeAttribute('marker-start');
+            } else {
+                path.setAttribute('marker-end', 'url(#arrow-backward)');
+                path.removeAttribute('marker-start');
+            }
+            
+            let controlX1, controlY1, controlX2, controlY2;
+            if (!isReverse) {
+                controlX1 = startX + (endX - startX) * 0.4;
+                controlY1 = startY;
+                controlX2 = startX + (endX - startX) * 0.6;
+                controlY2 = endY;
+            } else {
+                controlX1 = startX - (startX - endX) * 0.4;
+                controlY1 = startY;
+                controlX2 = startX - (startX - endX) * 0.6;
+                controlY2 = endY;
+            }
+            
+            const dAttribute = `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`;
+            path.setAttribute('d', dAttribute);
+            
+            const pathLength = path.getTotalLength();
+            path.style.strokeDasharray = pathLength;
+            path.style.strokeDashoffset = pathLength;
+            
+            requestAnimationFrame(() => {
+                path.style.transition = 'stroke-dashoffset 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+                path.style.strokeDashoffset = '0';
+            });
+
+            setTimeout(() => {
+                if (callback) callback();
+                path.style.transition = 'none';
+                path.setAttribute('d', '');
+                path.removeAttribute('marker-end');
+                path.removeAttribute('marker-start');
+            }, 600);
+        }
+
+        // TOC -> 본문 이동 (정방향)
+        function animateTOCToSlide(cardElement, targetIndex) {
+            const targetSlide = slides[targetIndex];
+            const targetTitle = targetSlide.querySelector('.main-title');
+            const targetTitleDot = targetTitle.querySelector('.dot');
+            const tocLeftTitle = document.getElementById('toc-main-title');
+            const tocDot = tocLeftTitle.querySelector('.dot'); 
+            const tocLeftDesc = document.getElementById('toc-description');
+            const tocRightMenu = document.getElementById('toc-right-menu');
+            const tocFooter = document.querySelector('#slide-toc .toc-footer-stats');
+
+            const targetAnchor = cardElement.querySelector('.target-anchor');
+            const tocArrow = cardElement.querySelector('.toc-arrow');
+            const originRect = targetAnchor.getBoundingClientRect();
+            const arrowRect = tocArrow.getBoundingClientRect();
+            const originComputedStyle = window.getComputedStyle(targetAnchor);
+            
+            targetSlide.style.visibility = 'hidden';
+            targetSlide.style.display = 'flex'; 
+            const targetRect = targetTitle.getBoundingClientRect();
+            const targetComputedStyle = window.getComputedStyle(targetTitle);
+            targetSlide.style.display = '';
+            targetSlide.style.visibility = '';
+
+            const startX = arrowRect.left + arrowRect.width / 2;
+            const startY = arrowRect.top + arrowRect.height / 2;
+            const endX = targetRect.left;
+            const endY = targetRect.bottom;
+
+            [tocLeftTitle, tocLeftDesc, tocRightMenu, tocFooter].forEach(el => {
+                if(el) { el.style.transition = 'opacity 0.2s ease'; el.style.opacity = '0'; }
+            });
+
+            const targetGrid = targetSlide.querySelector('.unified-grid');
+            if(targetGrid) { targetGrid.style.transition = 'none'; targetGrid.style.opacity = '0'; }
+            targetTitle.style.opacity = '0';
+
+            setTimeout(() => {
+                animateArrowTrace(startX, startY, endX, endY, false);
+
+                const flyer = document.createElement('div');
+                flyer.className = 'flying-title';
+                flyer.innerHTML = targetTitle.innerHTML; 
+                
+                flyer.style.position = 'fixed';
+                flyer.style.left = originRect.left + 'px';
+                flyer.style.top = originRect.top + 'px';
+                flyer.style.width = originRect.width + 'px'; 
+                flyer.style.whiteSpace = 'normal';           
+                flyer.style.lineHeight = originComputedStyle.lineHeight;
+                flyer.style.fontSize = originComputedStyle.fontSize;
+                flyer.style.fontWeight = originComputedStyle.fontWeight; 
+                flyer.style.letterSpacing = originComputedStyle.letterSpacing;
+                flyer.style.color = originComputedStyle.color;
+                document.body.appendChild(flyer);
+
+                requestAnimationFrame(() => {
+                    flyer.style.transition = 'all 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+                    flyer.style.left = targetRect.left + 'px';
+                    flyer.style.top = targetRect.top + 'px';
+                    flyer.style.width = targetRect.width + 'px'; 
+                    flyer.style.lineHeight = targetComputedStyle.lineHeight;
+                    flyer.style.fontSize = targetComputedStyle.fontSize;
+                    flyer.style.fontWeight = targetComputedStyle.fontWeight; 
+                    flyer.style.letterSpacing = targetComputedStyle.letterSpacing;
+                });
+
+                setTimeout(() => {
+                    showSlide(targetIndex);
+                    if(targetGrid) { targetGrid.style.transition = 'opacity 0.6s ease'; targetGrid.style.opacity = '1'; }
+                    setTimeout(() => { targetTitle.style.opacity = '1'; flyer.remove(); }, 600);
+                }, 600);
+            }, 200);
+        }
+
+        // 본문 -> TOC 복귀 (역방향)
+        function animateSlideToTOC(currentSlideElement) {
+            const currentTitle = currentSlideElement.querySelector('.main-title');
+            const titleDot = currentTitle.querySelector('.dot'); 
+            const currentGrid = currentSlideElement.querySelector('.unified-grid');
+            // 이제 data-target-idx에서 명시적으로 TOC 슬라이드(3)를 가져옵니다.
+            const targetIndex = parseInt(currentSlideElement.getAttribute('data-target-idx'));
+            const tocCard = document.querySelector(`.toc-card[data-target="${currentSlideElement.id === 'slide-arts' ? 4 : currentSlideElement.id === 'slide-cuisine' ? 5 : 6}"]`);
+            const targetAnchor = tocCard.querySelector('.target-anchor');
+            const tocArrow = tocCard.querySelector('.toc-arrow');
+            
+            const originRect = currentTitle.getBoundingClientRect();
+            const originComputedStyle = window.getComputedStyle(currentTitle);
+            const targetRect = targetAnchor.getBoundingClientRect();
+            const targetComputedStyle = window.getComputedStyle(targetAnchor);
+            const arrowRect = tocArrow.getBoundingClientRect();
+
+            const tocLeftTitle = document.getElementById('toc-main-title');
+            const tocLeftDesc = document.getElementById('toc-description');
+            const tocRightMenu = document.getElementById('toc-right-menu');
+            const tocFooter = document.querySelector('#slide-toc .toc-footer-stats');
+
+            const startX = originRect.left;
+            const startY = originRect.bottom;
+            const endX = arrowRect.left + arrowRect.width / 2;
+            const endY = arrowRect.top + arrowRect.height / 2;
+
+            [tocLeftTitle, tocLeftDesc, tocRightMenu, tocFooter].forEach(el => {
+                if(el) { el.style.transition = 'none'; el.style.opacity = '0'; }
+            });
+
+            currentTitle.style.opacity = '0';
+            if(currentGrid) currentGrid.style.opacity = '0';
+
+            animateArrowTrace(startX, startY, endX, endY, false);
+
+            const flyer = document.createElement('div');
+            flyer.className = 'flying-title';
+            flyer.innerHTML = currentTitle.innerHTML; 
+            
+            flyer.style.position = 'fixed';
+            flyer.style.left = originRect.left + 'px';
+            flyer.style.top = originRect.top + 'px';
+            flyer.style.width = originRect.width + 'px';
+            flyer.style.whiteSpace = 'normal';
+            flyer.style.lineHeight = originComputedStyle.lineHeight;
+            flyer.style.fontSize = originComputedStyle.fontSize;
+            flyer.style.fontWeight = originComputedStyle.fontWeight; 
+            flyer.style.letterSpacing = originComputedStyle.letterSpacing;
+            document.body.appendChild(flyer);
+
+            showSlide(3);
+
+            requestAnimationFrame(() => {
+                flyer.style.transition = 'all 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+                flyer.style.left = targetRect.left + 'px';
+                flyer.style.top = targetRect.top + 'px';
+                flyer.style.width = targetRect.width + 'px';
+                flyer.style.lineHeight = targetComputedStyle.lineHeight;
+                flyer.style.fontSize = targetComputedStyle.fontSize;
+                flyer.style.fontWeight = targetComputedStyle.fontWeight; 
+                flyer.style.letterSpacing = targetComputedStyle.letterSpacing;
+            });
+
+            setTimeout(() => {
+                [tocLeftTitle, tocLeftDesc, tocRightMenu, tocFooter].forEach(el => {
+                    if(el) { el.style.transition = 'opacity 0.4s ease'; el.style.opacity = '1'; }
+                });
+                setTimeout(() => { currentTitle.style.opacity = '1'; if(currentGrid) currentGrid.style.opacity = '1'; removeFlyerWithFade(flyer); }, 400);
+            }, 600);
+        }
+
+        // =========================================
+        // 4. 키보드 내비게이션 & 초기화(DOMContentLoaded)
+        // =========================================
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { showSlide(currentSlide + 1); } 
+            else if (e.key === 'ArrowLeft') { showSlide(currentSlide - 1); }
+        });
+        
+
+        // =========================================
+        // 5. DOM 초기화: 커스텀 커서, 이미지 모달, TOC 카드 등
+        // =========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Chart.js 전역 기본 스타일 (다크 테마에 맞춰 밝은 회색 글자 사용)
+            Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+            Chart.defaults.font.family = 'Poppins, sans-serif';
+
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            const cardImages = document.querySelectorAll('.card-img');
+            const customCursor = document.querySelector('.custom-cursor');
+
+            let mouseX = 0;
+            let mouseY = 0;
+
+            // Esc 키를 눌렀을 때 나타나는 '핑(ping)' 이펙트용 엘리먼트
+            const pingEl = document.createElement('div');
+            pingEl.className = 'cursor-ping';
+            document.body.appendChild(pingEl);
+
+            // 커스텀 커서 & 핑 이펙트가 마우스를 따라다니도록 위치 갱신
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                requestAnimationFrame(() => {
+                    customCursor.style.left = mouseX + 'px';
+                    customCursor.style.top = mouseY + 'px';
+                    pingEl.style.left = mouseX + 'px';
+                    pingEl.style.top = mouseY + 'px';
+                });
+            });
+
+        // 클릭 시 커서를 초록색으로, 뗄 때 원상 복구
+        document.addEventListener('mousedown', () => { customCursor.classList.add('click-active'); });
+        document.addEventListener('mouseup', () => { customCursor.classList.remove('click-active'); });
+
+        // 클릭 가능한 요소 위에 마우스를 올리면 커서를 확대 표시
+        const hoverTargets = '.toc-card, .unified-card, canvas, #image-modal, .card-image-wrapper, .hidden-jump-btn';
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest(hoverTargets)) {
+                customCursor.classList.add('hover-active');
+            }
+        });
+        document.addEventListener('mouseout', (e) => {
+            if (!e.target.closest(hoverTargets)) {
+                customCursor.classList.remove('hover-active');
+            }
+        });
+
+        // Esc: 화면 중앙(마우스 위치)에 핑(ping) 애니메이션 재생
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault(); 
+                pingEl.classList.remove('animate');
+                void pingEl.offsetWidth; // 리플로우를 강제해 애니메이션을 재시작
+                pingEl.classList.add('animate');
+            }
+        });
+
+        // 목차(TOC) 카드를 클릭하면 해당 본문 슬라이드로 FLIP 애니메이션 이동
+        const tocCards = document.querySelectorAll('.toc-card');
+        tocCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const targetIdx = parseInt(card.getAttribute('data-target'));
+                animateTOCToSlide(card, targetIdx);
+            });
+        });
+
+        // 본문 슬라이드(arts/cuisine/history)마다 목차로 돌아갈 때 사용할
+        // TOC 인덱스(3)를 data-target-idx 속성으로 미리 지정해 둔다.
+        // (우클릭 처리는 위의 전역 contextmenu 리스너에서 일괄 담당)
+        const bodySlides = [
+            { id: 'slide-arts', idx: 4 },     
+            { id: 'slide-cuisine', idx: 5 },  
+            { id: 'slide-history', idx: 6 }   
+        ];
+
+        bodySlides.forEach(item => {
+            const el = document.getElementById(item.id);
+            if (el) {
+                el.setAttribute('data-target-idx', '3'); // TOC 인덱스 고정
+            }
+        });
+
+        // 카드 이미지를 클릭하면 라이트박스 모달로 확대
+        cardImages.forEach(img => {
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const src = img.getAttribute('src');
+                modalImg.setAttribute('src', src);
+                modal.classList.add('active');
+            });
+        });
+
+        // 모달 바깥 영역 클릭 시 닫기 (트랜지션 종료 후 src 초기화)
+        modal.addEventListener('click', () => {
+            modal.classList.remove('active');
+            setTimeout(() => { modalImg.setAttribute('src', ''); }, 400);
+        });
+    });
+
+    // 목차(TOC) 좌측 하단의 숨겨진 '결론으로 이동' 버튼
+    document.querySelector('.hidden-jump-btn').addEventListener('click', function(e) {
+        e.stopPropagation(); // 슬라이드 전체 클릭 이벤트로 퍼지는 것을 방지
+        showSlide(7); 
+    });
+    </script>
+</body>
+</html>
