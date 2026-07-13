@@ -336,12 +336,39 @@
         display: block !important;
         margin-bottom: 10px !important;
     }
-
-    .group, .photo-card {
-        content-visibility: auto;
-        contain-intrinsic-size: 300px 300px; /* 렌더링 전 예상 크기 */
+    
+    .group {
+        /* 기존 300px 300px 대신 넉넉하게 설정 */
+        contain-intrinsic-size: 500px 600px; 
     }
 
+    /* 줌인된 상태에서는 렌더링 최적화 중단 */
+    .board-container.zoomed .group,
+    .board-container.zoomed .photo-card {
+        content-visibility: visible !important;
+    }
+
+    .photo-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 320px 450px; /* 대략적인 카드 + 캡션 높이 */
+    }
+
+    .group {
+        contain: layout style;
+    }
+
+
+        /* RoughNotation이 생성하는 SVG 요소들은 최적화 대상에서 제외 */
+    .group .rough-annotation {
+        content-visibility: visible !important;
+    }
+
+    /* 또는 .group 자체에 content-visibility를 끄고 싶다면 */
+    .group {
+        /* 레이아웃 성능을 포기하더라도 애니메이션이 중요하다면 */
+        content-visibility: visible; 
+    }
+    
     /* 7. 불필요 제거 및 중복 숨김 */
     .pin, .sticker { display: none !important; }
 }
