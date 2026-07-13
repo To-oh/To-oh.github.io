@@ -310,25 +310,23 @@
     }
 
     /* 6. 포토카드 내부 정렬 */
-    /* 1. 그룹 컨테이너: 내부 요소 높이만큼 자동 확장 */
     .group {
-        display: block !important; /* flex 대신 block 사용하여 높이 계산 문제 방지 */
+        display: block !important;
         width: 90% !important;
-        margin: 20px auto !important;
+        margin: 40px auto !important;     /* [변경] 그룹 위아래 간격을 40px로 조정 */
         height: auto !important;
-        overflow: visible !important; /* 자식 요소가 밖으로 넘치지 않게 함 */
+        overflow: visible !important;
         position: relative !important;
     }
-
     /* 2. 포토카드: 겹침 방지를 위해 흐름 속성 고정 */
     .photo-card {
         display: block !important;
         width: 100% !important;
-        margin-top: 20px !important; /* 카드 간격 확보 */
-        margin-bottom: 20px !important;
+        margin-top: 20px !important;      /* 위쪽 간격 */
+        margin-bottom: 40px !important;   /* [변경] 아래쪽 간격을 40px로 늘림 */
         position: relative !important;
         float: none !important;
-        clear: both !important; /* 앞 요소의 float 영향을 제거하여 겹침 방지 */
+        clear: both !important;
     }
 
     /* 3. 이미지 최적화 */
@@ -459,6 +457,34 @@
         };
     }
 
+
+    // 리사이즈 시 좌표 재계산 함수
+    function refreshAnnotations() {
+        const board = document.getElementById('board');
+        const boardRect = board.getBoundingClientRect();
+
+        document.querySelectorAll('.group').forEach(group => {
+            const cards = group.querySelectorAll('.photo-card');
+            const bounds = getVisualBounds(cards, boardRect);
+            const groupRect = group.getBoundingClientRect();
+            const anchor = group.querySelector('.annotation-anchor');
+            
+            if (anchor) {
+                anchor.style.left = (bounds.left - (groupRect.left - boardRect.left)) + 'px';
+                anchor.style.top = (bounds.top - (groupRect.top - boardRect.top)) + 'px';
+                anchor.style.width = bounds.width + 'px';
+                anchor.style.height = bounds.height + 'px';
+            }
+        });
+    }
+
+    // 창 크기 변경 시 실행
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(refreshAnnotations, 200); // 성능 최적화를 위해 디바운스 적용
+    });
+    
     // 현재 페이지에 만들어진 모든 RoughNotation 인스턴스 (줌 중엔 전부 숨겨야 하므로 보관)
     const allAnnotations = [];
 
