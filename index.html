@@ -5,11 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mood Board - Final</title>
     <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu&display=swap" rel="stylesheet">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght=0,300;0,700;0,900;1,300&family=Noto+Sans+KR:wght@300;700;900&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
 
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Gaegu', cursive; letter-spacing: 2px;}
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; letter-spacing: 2px;}
+        
 
         .board-container {
             /* 배경 이미지를 바둑판식으로 반복하여 확대 효과를 상쇄 */
@@ -74,6 +79,13 @@
             
             /* 5. 찢어진 종이 끝부분 효과 */
             position: relative;
+        }
+
+        .header-memo .caption-title {
+            font-size: 3rem; color: #555;
+            font-family: 'Gaegu', sans-serif !important;
+            letter-spacing: 2px;
+            font-weight: 700;
         }
 
         /* 6. 메모지 윗부분의 살짝 찢어진 느낌 구현 */
@@ -166,13 +178,13 @@
         .caption-title {
             font-weight: 700;
             font-size: 15px;
-            color: #333;
+            color: #2a2a2a;
             margin: 0 0 5px;
         }
         .caption-desc {
             display: none; /* 평소엔 숨김 - 제목만 보임 */
-            font-size: 12px;
-            color: #666;
+            font-size: 13px;
+            color: #494949;
             line-height: 1.45;
             margin: 0;
         }
@@ -235,14 +247,106 @@
             pointer-events: none; /* 순수 장식용 - 클릭/줌 로직에 영향 없음 */
             filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
         }
+        
+/* 기존 코드는 유지하되, @media (max-width: 768px) 블록만 교체 */
+
+@media (max-width: 768px) {
+    /* 1. 페이지 스크롤 및 배경 설정 */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background-image: url('./Pictures/wood-board-background.jpg') !important;
+        background-repeat: repeat-y !important;
+        background-size: 100% auto !important;
+        overflow-y: auto !important;
+        height: auto !important;
+    }
+
+    /* 2. 레이아웃 흐름 초기화: 세로로 나열 */
+    .board-container, #board {
+        position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 100% !important;
+        padding: 20px 0 !important;
+        transform: none !important;
+        left: 0 !important;
+        top: 0 !important;
+    }
+
+    /* 3. [수정] 제목 박스 높이 부족 문제 해결 */
+    .header-memo {
+        height: auto !important; /* 고정 높이 해제 */
+        padding: 30px !important; /* 상하좌우 여백 */
+        box-sizing: border-box !important;
+        text-align: center !important;
+        word-wrap: break-word !important; /* 긴 텍스트 줄바꿈 */
+        width: 85% !important;
+        position: relative !important;
+        margin: 0 auto 30px auto !important;
+    }
+
+    /* 4. 요소 겹침 방지 공통 설정 */
+    .header-memo, .qr-section, .group, .photo-card {
+        position: relative !important;
+        display: block !important;
+        margin: 0 auto 30px auto !important; /* 모든 요소 아래에 30px 여백 추가 */
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+    }
+
+    /* 5. [수정] QR 코드 정사각형 고정 */
+    .qr-section {
+        width: 150px !important; /* 가로 고정 */
+        height: 150px !important; /* 세로 고정 */
+        margin-bottom: 40px !important; /* 다음 요소와 간격 확보 */
+    }
+    .qr-section img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important; /* 찌그러짐 방지 */
+    }
+
+    /* 6. 포토카드 내부 정렬 */
+    /* 1. 그룹 컨테이너: 내부 요소 높이만큼 자동 확장 */
+    .group {
+        display: block !important; /* flex 대신 block 사용하여 높이 계산 문제 방지 */
+        width: 90% !important;
+        margin: 20px auto !important;
+        height: auto !important;
+        overflow: visible !important; /* 자식 요소가 밖으로 넘치지 않게 함 */
+        position: relative !important;
+    }
+
+    /* 2. 포토카드: 겹침 방지를 위해 흐름 속성 고정 */
+    .photo-card {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 20px !important; /* 카드 간격 확보 */
+        margin-bottom: 20px !important;
+        position: relative !important;
+        float: none !important;
+        clear: both !important; /* 앞 요소의 float 영향을 제거하여 겹침 방지 */
+    }
+
+    /* 3. 이미지 최적화 */
+    .photo-card img {
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 7. 불필요 제거 및 중복 숨김 */
+    .pin, .sticker { display: none !important; }
+}
     </style>
 </head>
 <body>
 
 <div class="board-container" id="board" onclick="resetZoom(event)">
-    <div class="group" id="group-top">
-        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-left"></div><img src="https://www.gugak.go.kr/ency/media/thumb/7716" alt=""><div class="caption"><div>제목</div><div class="caption-desc">내용</div></div></div>
-    </div>
     <!-- 배경 여백 장식 스티커 (클릭 불가, 순수 장식용) -->
     <div class="sticker" style="top:104vh; left:106vw; transform: rotate(-8deg);"><svg viewBox="0 0 60 40" width="60" height="40">
   <rect x="1" y="1" width="58" height="38" rx="3" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
@@ -306,7 +410,8 @@
 </svg></div>
 
     <!-- 제목 메모지 -->
-    <div class="header-memo">Country Comparison: Korea & Ireland</div>
+     
+    <div class="header-memo"><a href="Slide_show.html" class="caption-title" style="text-decoration:none; color:inherit;">Country Comparison: Korea & Ireland</a></div>
 
     <!-- QR코드 자리 -->
     <div class="qr-section" onclick="zoomIn(event, this)">

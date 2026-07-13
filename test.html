@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Mood Board - Rough Notation</title>
+    <!-- Rough Notation 라이브러리 추가 -->
+    <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
+    <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+
+        /* 테스트를 위해 웹 이미지 주소로 변경했습니다. 이 이미지가 보이는지 확인해주세요. */
+        .board-container {
+            width: 300vw; height: 300vh;
+            background: url("https://images.unsplash.com/photo-1519681393784-d120267933ba") repeat;
+            position: absolute; top: -100vh; left: -100vw;
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center center;
+        }
+
+        .board-container.zoomed { transform: scale(2.0); }
+        
+        /* 레이아웃 테스트를 위해 배경색 추가 */
+        .group {
+            position: absolute; cursor: pointer;
+            width: 300px; height: 200px;
+            background: rgba(255, 255, 255, 0.5); /* 그룹 영역 확인용 */
+            display: flex; align-items: center; justify-content: center;
+        }
+        /* 각 그룹의 절대 좌표 배치 */
+        #group-top { top: 120vh; left: 130vw; }
+        #group-left { top: 140vh; left: 110vw; }
+        #group-right { top: 140vh; left: 150vw; }
+
+        .photo-card {
+            width: 250px; background: white; padding: 15px;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
+            position: absolute;
+        }
+        .photo-card:nth-child(1) { transform: rotate(-10deg); z-index: 1; }
+        .photo-card:nth-child(2) { transform: rotate(10deg) translate(150px, 0px); z-index: 2; }
+        .photo-card img { width: 100%; height: 250px; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+<div class="board-container" id="board" onclick="resetZoom(event)">
+    <div class="group" id="group-top" onclick="zoomIn(event, this)">
+        <div class="photo-card"><img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773"></div>
+        <div class="photo-card"><img src="https://images.unsplash.com/photo-1530026405186-ed1f139313f8"></div>
+    </div>
+    <div class="group" id="group-left" onclick="zoomIn(event, this)">
+        <div class="photo-card"><img src="https://images.unsplash.com/photo-1490750963365-27a988d40a5e"></div>
+        <div class="photo-card"><img src="https://images.unsplash.com/photo-1518005020951-ecc894458316"></div>
+    </div>
+    <div class="group" id="group-right" onclick="zoomIn(event, this)">
+        <div class="photo-card"><img src="https://images.unsplash.com/photo-1515405295579-97b4512e09b1"></div>
+        <div class="photo-card"><img src="https://images.unsplash.com/photo-1513694203232-719a280e022f"></div>
+    </div>
+</div>
+
+<script>
+    // Rough Notation 초기화
+    const groups = document.querySelectorAll('.group');
+    const annotations = [];
+
+    groups.forEach(group => {
+        const anim = RoughNotation.annotate(group, { 
+            type: 'circle', 
+            color: '#ff4d4d', 
+            strokeWidth: 4,
+            padding: 40 
+        });
+        annotations.push(anim);
+        group.addEventListener('mouseenter', () => anim.show());
+        group.addEventListener('mouseleave', () => anim.hide());
+    });
+
+    // 2. 확대 초점 로직: 클릭된 요소의 위치를 동적으로 반영
+    function zoomIn(event, element) {
+        event.stopPropagation();
+        const board = document.getElementById('board');
+        const rect = element.getBoundingClientRect();
+        
+        // 화면 중앙 초점을 위해 계산
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        board.style.transformOrigin = `${centerX}px ${centerY}px`;
+        board.classList.add('zoomed');
+    }
+
+    function resetZoom(event) {
+        if (event.target.id === 'board') {
+            document.getElementById('board').classList.remove('zoomed');
+        }
+    }
+</script>
+</body>
+</html>
