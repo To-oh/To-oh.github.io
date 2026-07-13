@@ -337,6 +337,11 @@
         margin-bottom: 10px !important;
     }
 
+    .group, .photo-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 300px 300px; /* 렌더링 전 예상 크기 */
+    }
+
     /* 7. 불필요 제거 및 중복 숨김 */
     .pin, .sticker { display: none !important; }
 }
@@ -484,7 +489,7 @@
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(refreshAnnotations, 200); // 성능 최적화를 위해 디바운스 적용
     });
-    
+
     // 현재 페이지에 만들어진 모든 RoughNotation 인스턴스 (줌 중엔 전부 숨겨야 하므로 보관)
     const allAnnotations = [];
 
