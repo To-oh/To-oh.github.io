@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght=0,300;0,700;0,900;1,300&family=Noto+Sans+KR:wght@300;700;900&display=swap');
+
+        /* 🖱️ 1. 커스텀 마우스 커서 디자인 시스템 수정 */
+        .custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 14px;
+            height: 14px;
+            background-color: rgba(255, 255, 255, 0.1); /* 기본: 반투명 회색 */
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                        height 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                        background-color 0.3s ease,
+                        border 0.3s ease;
+        }
+
+        /* 호버 시: 크기가 확대되고 투명도가 올라간(더 선명해진) 회색 원 */
+        .custom-cursor.hover-active {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* 클릭 시: 투명도가 높은(더 맑고 투명한) 초록색 원으로 변화 */
+        .custom-cursor.click-active {
+            width: 65px;
+            height: 65px;
+            background-color: rgba(46, 213, 115, 0.15);
+            border: 2px solid rgba(46, 213, 115, 0.35);
+        }
+
+        /* Esc 핑 효과 */
+        .cursor-ping {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+        }
+
+        .cursor-ping.animate {
+            animation: ping-burst 0.5s ease-out forwards;
+        }
+
+        @keyframes ping-burst {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+        }
+        body { margin: 0; padding: 40px; background-color: #050505f9; color: #ffffff; font-family: 'Poppins', sans-serif; font-size: 1.3rem; display: flex; flex-direction: column; align-items: center; }
+        .header-box { width: 100%; max-width: 900px; background-color: #2C3E94; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 40px; }
+        .header-box h1 { margin: 0; font-size: 32px; letter-spacing: 2px; text-transform: uppercase; }
+        table { width: 100%; max-width: 1500px; border-collapse: collapse; }
+        .header-cell { padding: 20px; text-align: center; }
+        .pill-korea { background-color: #5352ed; color: #fff; padding: 10px 30px; border-radius: 50px; font-weight: bold; font-size: 18px; display: inline-block; }
+        .pill-ireland { background-color: #2ed573; color: #fff; padding: 10px 30px; border-radius: 50px; font-weight: bold; font-size: 18px; display: inline-block; }
+        
+        /* 이미지 배경 및 높이 설정 */
+        td { 
+            width: 50%; height: 250px; 
+            background-size: cover; background-position: center; 
+            vertical-align: top; padding: 20px;
+            transition: transform 0.3s ease;
+            position: relative;
+            text-align: center;
+        }
+
+        .td-left{
+            border-bottom: 1px dashed #444; cursor: pointer;
+            border-right: 1px dashed #444; cursor: pointer;
+        }
+
+        .td-right{
+            border-bottom: 2px dashed #444; cursor: pointer;
+        }
+        
+        /* 클릭 시 전체 화면 확대 */
+        .expanded {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1000; background-color: rgba(0,0,0,0.9);
+            background-size: contain; background-repeat: no-repeat;
+            cursor: zoom-out;
+        }
+
+        .corner-actions {
+            position: fixed;
+            top: 20px;
+            width: 95%;
+            max-width: 1500px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        /* QR Code 스타일 */
+        .qr-wrapper { width: 50px; cursor: pointer; transition: transform 0.3s; }
+        .qr-wrapper:hover { transform: scale(1.1); }
+        
+        /* 링크 스타일 */
+        .link-btn {
+            background: #2C3E94; color: white; padding: 5px 10px;
+            text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem;
+        }
+        .link-btn:hover { background: #1a255d; }
+
+        /* 확대 모달 */
+        #qr-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 3000; justify-content: center; align-items: center;
+        }
+        #qr-modal img { max-width: 80%; max-height: 80%; border: 5px solid white; }
+    </style>
+</head>
+<body>
+    <div class="header-box"><h1>KOREA & IRELAND: CULTURAL COMPARISON</h1></div>
+
+    <div class="corner-actions">
+        <div class="qr-wrapper" onclick="openQr()">
+            <img src="Pictures/qrcode.png" alt="QR Code" style="width:100%; display:block;">
+        </div>
+        <a href="Slide_show.html" class="link-btn">Extra Visuals →</a>
+    </div>
+
+    <div id="qr-modal" onclick="this.style.display='none'">
+        <img src="Pictures/qrcode.png" alt="Expanded QR">
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th class="header-cell"><div class="pill-korea">KOREA</div></th>
+                <th class="header-cell"><div class="pill-ireland">IRELAND</div></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td onclick="toggleExpand(this)" class="td-left" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://www.gugak.go.kr/ency/media/thumb/7716')">
+                    <strong>Interactive Arts (Pansori):</strong> Singer and audience actively engage through 'chuimsae', blending song and gesture.
+                </td>
+                <td onclick="toggleExpand(this)" class="td-right" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://upload.wikimedia.org/wikipedia/commons/6/63/Irish_Folk_session_The_Old_Dubliner_Hamburg_337-0007-hinnerk-ruemenapf.jpg')">
+                    <strong>Interactive Arts (Seisiún):</strong> Musicians and audience share songs, jokes, and dances together in pubs.
+                </td>
+            </tr>
+            <tr>
+                <td onclick="toggleExpand(this)" class="td-left" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://i0.wp.com/www.spicetheplate.com/wp-content/uploads/2017/01/Pork-Belly-Kimchi-Stew-12.jpg?fit=680%2C1020&ssl=1')">
+                    <strong>Broth Culture:</strong> Jjigae and Gukbap are shared at the table as soul food to warm the body and build bonds.
+                </td>
+                <td onclick="toggleExpand(this)" class="td-right" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://www.theirishmanswife.com/wp-content/uploads/2024/04/Beef-Guinness-Stew-2.jpg')">
+                    <strong>Broth Culture:</strong> Irish Stew and Coddle are classic comfort foods simmered to endure cold weather and bring families together.
+                </td>
+            </tr>
+            <tr>
+                <td onclick="toggleExpand(this)" class="td-left" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/070401_Panmunjeom3.jpg/1280px-070401_Panmunjeom3.jpg')">
+                    <strong>History:</strong> Divided along the 38th parallel post-WWII, suffering from the tragic Korean War.
+                </td>
+                <td onclick="toggleExpand(this)" class="td-right" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://cloudfront-us-east-2.images.arcpublishing.com/reuters/ROBWR2WA2RLZJPCTHTHJZZPFOE.jpg')">
+                    <strong>History:</strong> Divided following British colonial rule, suffering from the armed conflict known as 'The Troubles'.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        function toggleExpand(element) {
+            element.classList.toggle('expanded');
+        }
+
+        function openQr() {
+            const modal = document.getElementById('qr-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        // =========================================
+        // 5. DOM 초기화: 커스텀 커서, 이미지 모달, TOC 카드 등
+        // =========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Chart.js 전역 기본 스타일 (다크 테마에 맞춰 밝은 회색 글자 사용)
+            Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+            Chart.defaults.font.family = 'Poppins, sans-serif';
+
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            const cardImages = document.querySelectorAll('.card-img');
+            const customCursor = document.querySelector('.custom-cursor');
+
+            let mouseX = 0;
+            let mouseY = 0;
+
+            // Esc 키를 눌렀을 때 나타나는 '핑(ping)' 이펙트용 엘리먼트
+            const pingEl = document.createElement('div');
+            pingEl.className = 'cursor-ping';
+            document.body.appendChild(pingEl);
+
+            // 커스텀 커서 & 핑 이펙트가 마우스를 따라다니도록 위치 갱신
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                requestAnimationFrame(() => {
+                    customCursor.style.left = mouseX + 'px';
+                    customCursor.style.top = mouseY + 'px';
+                    pingEl.style.left = mouseX + 'px';
+                    pingEl.style.top = mouseY + 'px';
+                });
+            });
+
+        // 클릭 시 커서를 초록색으로, 뗄 때 원상 복구
+        document.addEventListener('mousedown', () => { customCursor.classList.add('click-active'); });
+        document.addEventListener('mouseup', () => { customCursor.classList.remove('click-active'); });
+
+        // 클릭 가능한 요소 위에 마우스를 올리면 커서를 확대 표시
+        const hoverTargets = '.toc-card, .unified-card, canvas, #image-modal, .card-image-wrapper, .hidden-jump-btn';
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest(hoverTargets)) {
+                customCursor.classList.add('hover-active');
+            }
+        });
+        document.addEventListener('mouseout', (e) => {
+            if (!e.target.closest(hoverTargets)) {
+                customCursor.classList.remove('hover-active');
+            }
+        });
+
+        // Esc: 화면 중앙(마우스 위치)에 핑(ping) 애니메이션 재생
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault(); 
+                pingEl.classList.remove('animate');
+                void pingEl.offsetWidth; // 리플로우를 강제해 애니메이션을 재시작
+                pingEl.classList.add('animate');
+            }
+        });
+    });
+    </script>
+</body>
+</html>
