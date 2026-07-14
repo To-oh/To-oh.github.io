@@ -42,7 +42,9 @@
             transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
             transform-origin: center center;
             will-change: transform;
+
         }
+
         
         /* 줌인 시 카드(이미지+압정 등)만 클릭 불가 처리 */
         .board-container.zoomed .photo-card {
@@ -247,131 +249,133 @@
             pointer-events: none; /* 순수 장식용 - 클릭/줌 로직에 영향 없음 */
             filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
         }
+
         
-/* 기존 코드는 유지하되, @media (max-width: 768px) 블록만 교체 */
+        
+        /* 기존 코드는 유지하되, @media (max-width: 768px) 블록만 교체 */
 
-@media (max-width: 768px) {
-    /* 1. 페이지 스크롤 및 배경 설정 */
-    html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background-image: url('./Pictures/wood-board-background.jpg') !important;
-        background-repeat: repeat-y !important;
-        background-size: 100% auto !important;
-        overflow-y: auto !important;
-        height: auto !important;
-    }
+        @media (max-width: 1024px) {
+            /* 1. 페이지 스크롤 및 배경 설정 */
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background-image: url('./Pictures/wood-board-background.jpg') !important;
+                background-repeat: repeat-y !important;
+                background-size: 100% auto !important;
+                overflow-y: auto !important;
+                height: auto !important;
+            }
 
-    /* 2. 레이아웃 흐름 초기화: 세로로 나열 */
-    .board-container, #board {
-        position: relative !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        width: 100% !important;
-        padding: 20px 0 !important;
-        transform: none !important;
-        left: 0 !important;
-        top: 0 !important;
-    }
+            /* 2. 레이아웃 흐름 초기화: 세로로 나열 */
+            .board-container, #board {
+                position: relative !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                width: 100% !important;
+                padding: 20px 0 !important;
+                transform: none !important;
+                left: 0 !important;
+                top: 0 !important;
+            }
 
-    /* 3. [수정] 제목 박스 높이 부족 문제 해결 */
-    .header-memo {
-        height: auto !important; /* 고정 높이 해제 */
-        padding: 30px !important; /* 상하좌우 여백 */
-        box-sizing: border-box !important;
-        text-align: center !important;
-        word-wrap: break-word !important; /* 긴 텍스트 줄바꿈 */
-        width: 85% !important;
-        position: relative !important;
-        margin: 0 auto 30px auto !important;
-    }
+            /* 3. [수정] 제목 박스 높이 부족 문제 해결 */
+            .header-memo {
+                height: auto !important; /* 고정 높이 해제 */
+                padding: 30px !important; /* 상하좌우 여백 */
+                box-sizing: border-box !important;
+                text-align: center !important;
+                word-wrap: break-word !important; /* 긴 텍스트 줄바꿈 */
+                width: 85% !important;
+                position: relative !important;
+                margin: 0 auto 30px auto !important;
+            }
 
-    /* 4. 요소 겹침 방지 공통 설정 */
-    .header-memo, .qr-section, .group, .photo-card {
-        position: relative !important;
-        display: block !important;
-        margin: 0 auto 30px auto !important; /* 모든 요소 아래에 30px 여백 추가 */
-        top: auto !important;
-        left: auto !important;
-        transform: none !important;
-    }
+            /* 4. 요소 겹침 방지 공통 설정 */
+            .header-memo, .qr-section, .group, .photo-card {
+                position: relative !important;
+                display: block !important;
+                margin: 0 auto 30px auto !important; /* 모든 요소 아래에 30px 여백 추가 */
+                top: auto !important;
+                left: auto !important;
+                transform: none !important;
+            }
 
-    /* 5. [수정] QR 코드 정사각형 고정 */
-    .qr-section {
-        width: 150px !important; /* 가로 고정 */
-        height: 150px !important; /* 세로 고정 */
-        margin-bottom: 40px !important; /* 다음 요소와 간격 확보 */
-    }
-    .qr-section img {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: contain !important; /* 찌그러짐 방지 */
-    }
+            /* 5. [수정] QR 코드 정사각형 고정 */
+            .qr-section {
+                width: 150px !important; /* 가로 고정 */
+                height: 150px !important; /* 세로 고정 */
+                margin-bottom: 40px !important; /* 다음 요소와 간격 확보 */
+            }
+            .qr-section img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important; /* 찌그러짐 방지 */
+            }
 
-    /* 6. 포토카드 내부 정렬 */
-    .group {
-        display: block !important;
-        width: 90% !important;
-        margin: 40px auto !important;     /* [변경] 그룹 위아래 간격을 40px로 조정 */
-        height: auto !important;
-        overflow: visible !important;
-        position: relative !important;
-    }
-    /* 2. 포토카드: 겹침 방지를 위해 흐름 속성 고정 */
-    .photo-card {
-        display: block !important;
-        width: 100% !important;
-        margin-top: 20px !important;      /* 위쪽 간격 */
-        margin-bottom: 40px !important;   /* [변경] 아래쪽 간격을 40px로 늘림 */
-        position: relative !important;
-        float: none !important;
-        clear: both !important;
-    }
+            /* 6. 포토카드 내부 정렬 */
+            .group {
+                display: block !important;
+                width: 90% !important;
+                margin: 40px auto !important;     /* [변경] 그룹 위아래 간격을 40px로 조정 */
+                height: auto !important;
+                overflow: visible !important;
+                position: relative !important;
+            }
+            /* 2. 포토카드: 겹침 방지를 위해 흐름 속성 고정 */
+            .photo-card {
+                display: block !important;
+                width: 100% !important;
+                margin-top: 20px !important;      /* 위쪽 간격 */
+                margin-bottom: 40px !important;   /* [변경] 아래쪽 간격을 40px로 늘림 */
+                position: relative !important;
+                float: none !important;
+                clear: both !important;
+            }
 
-    /* 3. 이미지 최적화 */
-    .photo-card img {
-        width: 100% !important;
-        height: auto !important;
-        display: block !important;
-        margin-bottom: 10px !important;
-    }
-    
-    .group {
-        /* 기존 300px 300px 대신 넉넉하게 설정 */
-        contain-intrinsic-size: 500px 600px; 
-    }
+            /* 3. 이미지 최적화 */
+            .photo-card img {
+                width: 100% !important;
+                height: auto !important;
+                display: block !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .group {
+                /* 기존 300px 300px 대신 넉넉하게 설정 */
+                contain-intrinsic-size: 500px 600px; 
+            }
 
-    /* 줌인된 상태에서는 렌더링 최적화 중단 */
-    .board-container.zoomed .group,
-    .board-container.zoomed .photo-card {
-        content-visibility: visible !important;
-    }
+            /* 줌인된 상태에서는 렌더링 최적화 중단 */
+            .board-container.zoomed .group,
+            .board-container.zoomed .photo-card {
+                content-visibility: visible !important;
+            }
 
-    .photo-card {
-        content-visibility: auto;
-        contain-intrinsic-size: 320px 450px; /* 대략적인 카드 + 캡션 높이 */
-    }
+            .photo-card {
+                content-visibility: auto;
+                contain-intrinsic-size: 320px 450px; /* 대략적인 카드 + 캡션 높이 */
+            }
 
-    .group {
-        contain: layout style;
-    }
+            .group {
+                contain: layout style;
+            }
 
 
-        /* RoughNotation이 생성하는 SVG 요소들은 최적화 대상에서 제외 */
-    .group .rough-annotation {
-        content-visibility: visible !important;
-    }
+                /* RoughNotation이 생성하는 SVG 요소들은 최적화 대상에서 제외 */
+            .group .rough-annotation {
+                content-visibility: visible !important;
+            }
 
-    /* 또는 .group 자체에 content-visibility를 끄고 싶다면 */
-    .group {
-        /* 레이아웃 성능을 포기하더라도 애니메이션이 중요하다면 */
-        content-visibility: visible; 
-    }
-    
-    /* 7. 불필요 제거 및 중복 숨김 */
-    .pin, .sticker { display: none !important; }
-}
+            /* 또는 .group 자체에 content-visibility를 끄고 싶다면 */
+            .group {
+                /* 레이아웃 성능을 포기하더라도 애니메이션이 중요하다면 */
+                content-visibility: visible; 
+            }
+            
+            /* 7. 불필요 제거 및 중복 숨김 */
+            .pin, .sticker { display: none !important; }
+        }
     </style>
 </head>
 <body>
