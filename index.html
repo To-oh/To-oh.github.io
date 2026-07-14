@@ -42,7 +42,6 @@
             transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
             transform-origin: center center;
             will-change: transform;
-
         }
 
         
@@ -250,7 +249,6 @@
             filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
         }
 
-        
         
         /* 기존 코드는 유지하되, @media (max-width: 768px) 블록만 교체 */
 
@@ -574,6 +572,13 @@
 
         // 줌인된 그룹에만 설명글(caption-desc)이 보이도록 active-zoom 클래스 부여
         document.querySelectorAll('.group, .qr-section').forEach(g => g.classList.remove('active-zoom'));
+        
+        document.querySelectorAll('.group, .qr-section').forEach(g => {
+            g.style.zIndex = '10'; 
+        });
+        element.classList.add('active-zoom');
+
+        element.style.zIndex = '100'; 
         element.classList.add('active-zoom');
 
         board.style.transform = '';
@@ -618,6 +623,10 @@
         if (event.target.closest('.photo-card') || event.target.closest('.qr-section')) {
             return; 
         }
+
+        document.querySelectorAll('.group, .qr-section').forEach(g => {
+            g.style.zIndex = '10'; 
+        });
 
         // 3. 빈 배경을 클릭했을 때만 줌아웃 실행
         hideAllAnnotations();
