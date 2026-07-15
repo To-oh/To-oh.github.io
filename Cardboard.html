@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Board - Final</title>
+    <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu&display=swap" rel="stylesheet">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght=0,300;0,700;0,900;1,300&family=Noto+Sans+KR:wght@300;700;900&display=swap');
+
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; letter-spacing: 2px;}
+        
+
+        .board-container {
+            /* 배경 이미지를 바둑판식으로 반복하여 확대 효과를 상쇄 */
+            background-image: url("./Pictures/wood-board-background.jpg");
+            background-repeat: repeat; 
+            
+            /* 1. 이미지를 늘리지 않고 원본 해상도 유지 */
+            background-size: 512px; /* 이미지 원본 크기에 맞게 조절 */
+            
+            /* 2. 줌 애니메이션 중에도 배경은 정지 상태 유지 */
+            background-attachment: fixed;
+            
+            /* 3. 픽셀 보간 오류 방지 (줌인 시 선명도 유지) */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            
+            /* 배경색을 이미지와 유사하게 설정하여 이음새 노출 최소화 */
+            background-color: #c9a876;
+
+            image-rendering: -webkit-optimize-contrast;
+            
+            /* 기타 배치 */
+            position: absolute; top: -100vh; left: -100vw;
+            width: 300vw; height: 300vh;
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center center;
+            will-change: transform;
+        }
+
+        
+        /* 줌인 시 카드(이미지+압정 등)만 클릭 불가 처리 */
+        .board-container.zoomed .photo-card {
+            pointer-events: none !important;
+        }
+
+        /* 보드 전체는 줌아웃을 위해 클릭 가능하게 유지 */
+        .board-container {
+            pointer-events: auto !important;
+        }
+
+        .header-memo {
+            position: absolute; top: 105vh; left: 130vw;
+            width: 1000px; height: 100px;
+            
+            /* 1. 메모지 색상 및 질감 느낌 */
+            background: linear-gradient(135deg, #fffef0 0%, #f7f3d7 100%);
+            
+            /* 2. 더 현실적인 그림자: 메모지가 살짝 들린 느낌 */
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.15), 
+                        inset 0 0 5px rgba(255,255,255,0.5);
+            
+            /* 3. 메모지 느낌의 테두리 */
+            border: 1px solid #e8e4c9;
+            border-radius: 2px;
+            
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; color: #555;
+            font-weight: 700;
+            
+            /* 4. 살짝 비뚤어진 느낌 */
+            transform: rotate(-1.5deg);
+            text-align: center;
+            
+            /* 5. 찢어진 종이 끝부분 효과 */
+            position: relative;
+        }
+
+        .header-memo .caption-title {
+            font-size: 3rem; color: #555;
+            font-family: 'Gaegu', sans-serif !important;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        /* 6. 메모지 윗부분의 살짝 찢어진 느낌 구현 */
+        .header-memo::before {
+            content: '';
+            position: absolute;
+            top: -5px; left: 0; right: 0;
+            height: 10px;
+            background-image: radial-gradient(circle, #fffef0 3px, transparent 3px);
+            background-size: 10px 10px;
+            background-position: 0 -5px;
+        }
+        
+        /* QR코드 영역에 클릭 가능성 보장 */
+        .qr-section {
+            position: absolute; top: 170vh; left: 145vw;
+            width: 150px; height: 150px;
+            background: white; padding: 10px;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 50;
+            transform: rotate(7deg);
+        }
+        .qr-section img { width: 100%; height: 100%; pointer-events: none; }
+
+        .board-container.zoomed .photo-card, .board-container.zoomed .qr-section { pointer-events: none !important; }
+        .board-container { 
+            will-change: transform;
+            backface-visibility: hidden; /* 렌더링 품질 향상 */
+            -webkit-font-smoothing: subpixel-antialiased; /* 텍스트 뭉개짐 방지 */
+            pointer-events: auto !important; 
+        }
+
+        .group {
+            position: absolute;
+            width: 600px; height: 350px;
+            display: flex; align-items: center; justify-content: center;
+            /* group 박스 전체(600x350)에 클릭 이벤트를 걸지 않는다.
+               사진이 회전/이동되어 있어서 이 박스 안엔 사진이 없는 빈 영역이 많은데,
+               거기 클릭했을 때도 zoomIn이 잡아채서(때론 옆 그룹과 겹쳐서) 엉뚱한 곳으로
+               가는 문제가 있었다. pointer-events:none 으로 완전히 투명하게 만들고
+               실제 클릭은 .photo-card 에만 건다. */
+            pointer-events: none;
+        }
+
+        /* 줌인 시 텍스트 및 카드 렌더링 품질 유지 */
+        /* 줌인 된 상태의 컨테이너와 내부 텍스트 렌더링 최적화 */
+        .board-container.zoomed {
+            /* 텍스트 뭉개짐 방지 및 선명도 강화 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            
+            /* 픽셀 보간을 방지하여 선명하게 표시 */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        /* 줌인 시 텍스트 품질 유지 */
+        .board-container.zoomed .caption-title,
+        .board-container.zoomed .caption-desc,
+        .board-container.zoomed .header-memo {
+            /* 변형 후에도 텍스트가 명확하게 유지되도록 함 */
+            transform: translateZ(0);
+        }
+        
+        #group-top { top: 120vh; left: 130vw; }
+        #group-left { top: 157vh; left: 100vw; }
+        #group-right { top: 162vh; left: 160vw; }
+
+        .photo-card {
+            width: 320px; background: white; padding: 15px 15px 0;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
+            position: absolute;
+            cursor: pointer;
+            pointer-events: auto; /* group은 꺼놨으니 카드 자체에서 다시 켜준다 */
+        }
+
+        /* 하단 캡션 영역: 원래 padding-bottom:100px 로 비워뒀던 자리를 실제 텍스트 영역으로 사용.
+           높이를 100px로 고정해두면 설명글이 보이든 안 보이든 카드 전체 크기가 변하지 않아서
+           확대 중심 좌표 계산(getVisualBounds)에 영향을 주지 않는다. */
+        .photo-card .caption {
+            height: 100px;
+            box-sizing: border-box;
+            padding: 10px 4px 0;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            /*font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;*/
+        }
+        .caption-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #2a2a2a;
+            margin: 0 0 5px;
+        }
+        .caption-desc {
+            display: none; /* 평소엔 숨김 - 제목만 보임 */
+            font-size: 13px;
+            color: #494949;
+            line-height: 1.45;
+            margin: 0;
+        }
+        /* 줌인된 그룹(.active-zoom)에서만 설명글이 나타나고, 줌아웃하면 다시 숨겨진다 */
+        .group.active-zoom .caption-desc {
+            display: block;
+        }
+
+        /* 디자인 차별화 */
+        #group-top .photo-card:nth-child(2) { transform: rotate(-5deg);}
+        #group-top .photo-card:nth-child(1) { transform: rotate(5deg) translate(345px, 65px); }
+
+        #group-left .photo-card { transform: rotate(0deg); }
+        #group-left .photo-card:nth-child(2) { transform: rotate(-8deg) translate(310px, -50px); }
+
+        #group-right .photo-card { transform: rotate(10deg); }
+        #group-right .photo-card:nth-child(2) { transform: rotate(-10deg) translate(330px, 70px); }
+        
+        .photo-card img {
+            width: 100%; height: 320px; object-fit: cover;
+            /* 이미지 자체를 클릭하면 브라우저 기본 "이미지 드래그" 제스처가 끼어들어
+               클릭이 드래그로 인식되면서 멈춘 것처럼 보이는 문제 방지.
+               pointer-events:none 으로 클릭이 항상 부모(.photo-card -> .group)로
+               그대로 전달되게 해서 줌인은 정상 동작하고, 드래그/선택만 막는다. */
+            pointer-events: none;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        
+        /* 압정 핀: 카드 정중앙 상단에 정확히 배치(left:50% + translateX(-50%)).
+           radial-gradient로 구체 입체감을 주고, 작은 하이라이트로 광택을 더해
+           실제 플라스틱 압정처럼 보이게 했다. */
+        .pin {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            position: absolute;
+            top: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow:
+                0 3px 5px rgba(0,0,0,0.45),
+                inset -3px -4px 6px rgba(0,0,0,0.35),
+                inset 2px 3px 4px rgba(255,255,255,0.5);
+        }
+        .pin::after {
+            content: '';
+            position: absolute;
+            top: 4px; left: 6px;
+            width: 8px; height: 5px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            filter: blur(0.4px);
+        }
+        .pin-left { background: radial-gradient(circle at 35% 30%, #7d7dff 0%, #4c4cd6 55%, #26268f 100%); }
+        .pin-right { background: radial-gradient(circle at 35% 30%, #6be899 0%, #34c576 55%, #1a8a4f 100%); }
+
+        .sticker {
+            position: absolute;
+            pointer-events: none; /* 순수 장식용 - 클릭/줌 로직에 영향 없음 */
+            filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
+        }
+
+        
+        /* 기존 코드는 유지하되, @media (max-width: 768px) 블록만 교체 */
+
+        @media (max-width: 768px) {
+            /* 1. 페이지 스크롤 및 배경 설정 */
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background-image: url('./Pictures/wood-board-background.jpg') !important;
+                background-repeat: repeat-y !important;
+                background-size: 100% auto !important;
+                overflow-y: auto !important;
+                height: auto !important;
+            }
+
+            /* 2. 레이아웃 흐름 초기화: 세로로 나열 */
+            .board-container, #board {
+                position: relative !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                width: 100% !important;
+                padding: 20px 0 !important;
+                transform: none !important;
+                left: 0 !important;
+                top: 0 !important;
+            }
+
+            /* 3. [수정] 제목 박스 높이 부족 문제 해결 */
+            .header-memo {
+                height: auto !important; /* 고정 높이 해제 */
+                padding: 30px !important; /* 상하좌우 여백 */
+                box-sizing: border-box !important;
+                text-align: center !important;
+                word-wrap: break-word !important; /* 긴 텍스트 줄바꿈 */
+                width: 85% !important;
+                position: relative !important;
+                margin: 0 auto 30px auto !important;
+            }
+
+            /* 4. 요소 겹침 방지 공통 설정 */
+            .header-memo, .qr-section, .group, .photo-card {
+                position: relative !important;
+                display: block !important;
+                margin: 0 auto 30px auto !important; /* 모든 요소 아래에 30px 여백 추가 */
+                top: auto !important;
+                left: auto !important;
+                transform: none !important;
+            }
+
+            /* 5. [수정] QR 코드 정사각형 고정 */
+            .qr-section {
+                width: 150px !important; /* 가로 고정 */
+                height: 150px !important; /* 세로 고정 */
+                margin-bottom: 40px !important; /* 다음 요소와 간격 확보 */
+            }
+            .qr-section img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important; /* 찌그러짐 방지 */
+            }
+
+            /* 6. 포토카드 내부 정렬 */
+            .group {
+                display: block !important;
+                width: 90% !important;
+                margin: 40px auto !important;     /* [변경] 그룹 위아래 간격을 40px로 조정 */
+                height: auto !important;
+                overflow: visible !important;
+                position: relative !important;
+            }
+            /* 2. 포토카드: 겹침 방지를 위해 흐름 속성 고정 */
+            .photo-card {
+                display: block !important;
+                width: 100% !important;
+                margin-top: 20px !important;      /* 위쪽 간격 */
+                margin-bottom: 40px !important;   /* [변경] 아래쪽 간격을 40px로 늘림 */
+                position: relative !important;
+                float: none !important;
+                clear: both !important;
+            }
+
+            /* 3. 이미지 최적화 */
+            .photo-card img {
+                width: 100% !important;
+                height: auto !important;
+                display: block !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .group {
+                /* 기존 300px 300px 대신 넉넉하게 설정 */
+                contain-intrinsic-size: 500px 600px; 
+            }
+
+            /* 줌인된 상태에서는 렌더링 최적화 중단 */
+            .board-container.zoomed .group,
+            .board-container.zoomed .photo-card {
+                content-visibility: visible !important;
+            }
+
+            .photo-card {
+                content-visibility: auto;
+                contain-intrinsic-size: 320px 450px; /* 대략적인 카드 + 캡션 높이 */
+            }
+
+            .group {
+                contain: layout style;
+            }
+
+
+                /* RoughNotation이 생성하는 SVG 요소들은 최적화 대상에서 제외 */
+            .group .rough-annotation {
+                content-visibility: visible !important;
+            }
+
+            /* 또는 .group 자체에 content-visibility를 끄고 싶다면 */
+            .group {
+                /* 레이아웃 성능을 포기하더라도 애니메이션이 중요하다면 */
+                content-visibility: visible; 
+            }
+            
+            /* 7. 불필요 제거 및 중복 숨김 */
+            .pin, .sticker { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="board-container" id="board" onclick="resetZoom(event)">
+    <!-- 배경 여백 장식 스티커 (클릭 불가, 순수 장식용) -->
+    <div class="sticker" style="top:104vh; left:106vw; transform: rotate(-8deg);"><svg viewBox="0 0 60 40" width="60" height="40">
+  <rect x="1" y="1" width="58" height="38" rx="3" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <circle cx="30" cy="20" r="9" fill="#c60c30"/>
+  <path d="M30,11 A4.5,4.5 0 0,1 30,20 A4.5,4.5 0 0,0 30,29 A9,9 0 0,1 30,11 Z" fill="#003478"/>
+  <g stroke="#111" stroke-width="1.4">
+    <line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="14" x2="15" y2="14"/>
+    <line x1="9" y1="26" x2="15" y2="26"/><line x1="9" y1="29" x2="12" y2="29"/><line x1="13" y1="29" x2="15" y2="29"/>
+    <line x1="9" y1="32" x2="15" y2="32"/>
+    <line x1="45" y1="8" x2="51" y2="8"/><line x1="45" y1="11" x2="48" y2="11"/><line x1="49" y1="11" x2="51" y2="11"/>
+    <line x1="45" y1="14" x2="51" y2="14"/>
+    <line x1="45" y1="26" x2="48" y2="26"/><line x1="49" y1="26" x2="51" y2="26"/>
+    <line x1="45" y1="29" x2="51" y2="29"/>
+    <line x1="45" y1="32" x2="48" y2="32"/><line x1="49" y1="32" x2="51" y2="32"/>
+  </g>
+</svg></div>
+    <div class="sticker" style="top:112vh; left:184vw; transform: rotate(12deg);"><svg viewBox="0 0 40 36" width="40" height="36">
+  <path d="M20,34 C20,34 2,22 2,11 C2,4 8,0 13,0 C17,0 20,3 20,7 C20,3 23,0 27,0 C32,0 38,4 38,11 C38,22 20,34 20,34 Z" fill="#e0435b"/>
+</svg></div>
+    <div class="sticker" style="top:101vh; left:150vw; transform: rotate(6deg);"><svg viewBox="0 0 60 40" width="60" height="40">
+  <rect x="1" y="1" width="58" height="38" rx="3" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <rect x="2" y="2" width="18.7" height="36" fill="#169b62"/>
+  <rect x="20.7" y="2" width="18.7" height="36" fill="#ffffff"/>
+  <rect x="39.3" y="2" width="18.7" height="36" fill="#ff883e"/>
+</svg></div>
+    <div class="sticker" style="top:150vh; left:116vw; transform: rotate(-14deg);"><svg viewBox="0 0 40 38" width="40" height="38">
+  <path d="M20,0 L24.5,13.5 L39,13.8 L27.3,22.3 L31.4,36 L20,27.8 L8.6,36 L12.7,22.3 L1,13.8 L15.5,13.5 Z" fill="#f2b90c"/>
+</svg></div>
+    <div class="sticker" style="top:153vh; left:174vw; transform: rotate(10deg);"><svg viewBox="0 0 60 40" width="60" height="40">
+  <rect x="1" y="1" width="58" height="38" rx="3" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <circle cx="30" cy="20" r="9" fill="#c60c30"/>
+  <path d="M30,11 A4.5,4.5 0 0,1 30,20 A4.5,4.5 0 0,0 30,29 A9,9 0 0,1 30,11 Z" fill="#003478"/>
+  <g stroke="#111" stroke-width="1.4">
+    <line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="14" x2="15" y2="14"/>
+    <line x1="9" y1="26" x2="15" y2="26"/><line x1="9" y1="29" x2="12" y2="29"/><line x1="13" y1="29" x2="15" y2="29"/>
+    <line x1="9" y1="32" x2="15" y2="32"/>
+    <line x1="45" y1="8" x2="51" y2="8"/><line x1="45" y1="11" x2="48" y2="11"/><line x1="49" y1="11" x2="51" y2="11"/>
+    <line x1="45" y1="14" x2="51" y2="14"/>
+    <line x1="45" y1="26" x2="48" y2="26"/><line x1="49" y1="26" x2="51" y2="26"/>
+    <line x1="45" y1="29" x2="51" y2="29"/>
+    <line x1="45" y1="32" x2="48" y2="32"/><line x1="49" y1="32" x2="51" y2="32"/>
+  </g>
+</svg></div>
+    <div class="sticker" style="top:119vh; left:106vw; transform: rotate(-10deg);"><svg viewBox="0 0 40 36" width="40" height="36">
+  <path d="M20,34 C20,34 2,22 2,11 C2,4 8,0 13,0 C17,0 20,3 20,7 C20,3 23,0 27,0 C32,0 38,4 38,11 C38,22 20,34 20,34 Z" fill="#e0435b"/>
+</svg></div>
+    <div class="sticker" style="top:100vh; left:172vw; transform: rotate(15deg);"><svg viewBox="0 0 40 38" width="40" height="38">
+  <path d="M20,0 L24.5,13.5 L39,13.8 L27.3,22.3 L31.4,36 L20,27.8 L8.6,36 L12.7,22.3 L1,13.8 L15.5,13.5 Z" fill="#f2b90c"/>
+</svg></div>
+    <div class="sticker" style="top:194vh; left:111vw; transform: rotate(-6deg);"><svg viewBox="0 0 60 40" width="60" height="40">
+  <rect x="1" y="1" width="58" height="38" rx="3" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <rect x="2" y="2" width="18.7" height="36" fill="#169b62"/>
+  <rect x="20.7" y="2" width="18.7" height="36" fill="#ffffff"/>
+  <rect x="39.3" y="2" width="18.7" height="36" fill="#ff883e"/>
+</svg></div>
+    <div class="sticker" style="top:199vh; left:184vw; transform: rotate(8deg);"><svg viewBox="0 0 40 36" width="40" height="36">
+  <path d="M20,34 C20,34 2,22 2,11 C2,4 8,0 13,0 C17,0 20,3 20,7 C20,3 23,0 27,0 C32,0 38,4 38,11 C38,22 20,34 20,34 Z" fill="#e0435b"/>
+</svg></div>
+    <div class="sticker" style="top:103vh; left:190vw; transform: rotate(-12deg);"><svg viewBox="0 0 40 38" width="40" height="38">
+  <path d="M20,0 L24.5,13.5 L39,13.8 L27.3,22.3 L31.4,36 L20,27.8 L8.6,36 L12.7,22.3 L1,13.8 L15.5,13.5 Z" fill="#f2b90c"/>
+</svg></div>
+
+    <!-- 제목 메모지 -->
+     
+    <div class="header-memo"><a href="Slide_show.html" class="caption-title" style="text-decoration:none; color:inherit;">Country Comparison: Korea & Ireland</a></div>
+
+    <!-- QR코드 자리 -->
+    <div class="qr-section" onclick="zoomIn(event, this)">
+        <img src="./Pictures/Github_pages_QR.svg" alt="QR Code" style="width:100%; display:block;">
+    </div>
+
+    <div class="group" id="group-top">
+        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-right"></div><img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Irish_Folk_session_The_Old_Dubliner_Hamburg_337-0007-hinnerk-ruemenapf.jpg" draggable="false" alt=""><div class="caption"><div class="caption-title">Interactive Arts: Seisiún</div><div class="caption-desc">Musicians and audience share songs, jokes, and dances together in pubs.</div></div></div>
+        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-left"></div><img src="https://www.gugak.go.kr/ency/media/thumb/7716" draggable="false" alt=""><div class="caption"><div class="caption-title">Interactive Arts: Pansori</div><div class="caption-desc">Singer and audience actively engage through 'chuimsae', blending song and gesture.</div></div></div>
+    </div>
+    
+    <div class="group" id="group-left">
+        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-left"></div><img src="https://i0.wp.com/www.spicetheplate.com/wp-content/uploads/2017/01/Pork-Belly-Kimchi-Stew-12.jpg?fit=680%2C1020&ssl=1" draggable="false" alt=""><div class="caption"><div class="caption-title">Broth Culture: Kimchi Jjigae</div><div class="caption-desc">Jjigae and Gukbap are shared at the table as soul food to warm the body and build bonds.</div></div></div>
+        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-right"></div><img src="https://www.theirishmanswife.com/wp-content/uploads/2024/04/Beef-Guinness-Stew-2.jpg" draggable="false" alt=""><div class="caption"><div class="caption-title">Broth Culture: Irish Stew</div><div class="caption-desc">Irish Stew and Coddle are classic comfort foods simmered to endure cold weather and bring families together.</div></div></div>
+    </div>
+    
+    <div class="group" id="group-right">
+        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-left"></div><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/070401_Panmunjeom3.jpg/1280px-070401_Panmunjeom3.jpg" draggable="false" alt=""><div class="caption"><div class="caption-title">History: Panmunjeon</div><div class="caption-desc">Divided along the 38th parallel post-WWII, suffering from the tragic Korean War.</div></div></div>
+        <div class="photo-card" onclick="zoomIn(event, this.closest('.group'))"><div class="pin pin-right"></div><img src="https://cloudfront-us-east-2.images.arcpublishing.com/reuters/ROBWR2WA2RLZJPCTHTHJZZPFOE.jpg" draggable="false" alt=""><div class="caption"><div class="caption-title">History: The Troubles</div><div class="caption-desc">Divided following British colonial rule, suffering from the armed conflict known as 'The Troubles'.</div></div></div>
+    </div>
+</div>
+
+<script>
+    const ZOOM_SCALE = 2.0;
+
+    // photo-card 두 장(회전+이동 적용된 실제 렌더링 결과)을 감싸는
+    // 바운딩 박스를 구해서, 그 중심을 "그룹의 진짜 시각적 중심"으로 사용한다.
+    // group 자체의 600x350 박스 중심과는 다를 수 있음(카드가 비대칭 translate/rotate 되어 있으므로).
+    function getVisualBounds(cardEls, boardRect) {
+        let minLeft = Infinity, minTop = Infinity, maxRight = -Infinity, maxBottom = -Infinity;
+        cardEls.forEach(card => {
+            const r = card.getBoundingClientRect();
+            minLeft = Math.min(minLeft, r.left);
+            minTop = Math.min(minTop, r.top);
+            maxRight = Math.max(maxRight, r.right);
+            maxBottom = Math.max(maxBottom, r.bottom);
+        });
+        return {
+            left: minLeft - boardRect.left,
+            top: minTop - boardRect.top,
+            width: maxRight - minLeft,
+            height: maxBottom - minTop,
+            cx: (minLeft + maxRight) / 2 - boardRect.left,
+            cy: (minTop + maxBottom) / 2 - boardRect.top
+        };
+    }
+
+
+    // 리사이즈 시 좌표 재계산 함수
+    function refreshAnnotations() {
+        const board = document.getElementById('board');
+        const boardRect = board.getBoundingClientRect();
+
+        document.querySelectorAll('.group').forEach(group => {
+            const cards = group.querySelectorAll('.photo-card');
+            const bounds = getVisualBounds(cards, boardRect);
+            const groupRect = group.getBoundingClientRect();
+            const anchor = group.querySelector('.annotation-anchor');
+            
+            if (anchor) {
+                anchor.style.left = (bounds.left - (groupRect.left - boardRect.left)) + 'px';
+                anchor.style.top = (bounds.top - (groupRect.top - boardRect.top)) + 'px';
+                anchor.style.width = bounds.width + 'px';
+                anchor.style.height = bounds.height + 'px';
+            }
+        });
+    }
+
+    // 창 크기 변경 시 실행
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(refreshAnnotations, 200); // 성능 최적화를 위해 디바운스 적용
+    });
+
+    // 현재 페이지에 만들어진 모든 RoughNotation 인스턴스 (줌 중엔 전부 숨겨야 하므로 보관)
+    const allAnnotations = [];
+
+    let isZooming = false; // 애니메이션 잠금 플래그
+
+    // 낙서(색연필 원) 앵커: group 박스가 아니라, 실제 사진 두 장을 감싸는
+    // 투명 div를 만들어 거기에 RoughNotation을 적용 -> 원의 중심이 사진 중앙에 정확히 맞음.
+    function setupAnnotations() {
+        const board = document.getElementById('board');
+        const boardRect = board.getBoundingClientRect(); // 이 시점엔 board가 아직 확대 전(원본 상태)
+
+        document.querySelectorAll('.group').forEach(group => {
+            const cards = group.querySelectorAll('.photo-card');
+            const bounds = getVisualBounds(cards, boardRect);
+            const groupRect = group.getBoundingClientRect();
+
+            const anchor = document.createElement('div');
+            anchor.className = 'annotation-anchor';
+            anchor.style.position = 'absolute';
+            anchor.style.left = (bounds.left - (groupRect.left - boardRect.left)) + 'px';
+            anchor.style.top = (bounds.top - (groupRect.top - boardRect.top)) + 'px';
+            anchor.style.width = bounds.width + 'px';
+            anchor.style.height = bounds.height + 'px';
+            anchor.style.pointerEvents = 'none';
+            group.appendChild(anchor);
+
+            const annotation = RoughNotation.annotate(anchor, {
+                type: 'circle', color: '#ff4d4d', strokeWidth: 10, padding: 40
+            });
+            
+            allAnnotations.push(annotation);
+
+            // board가 scale() 되어 있는 동안 show()가 호출되면, RoughNotation이
+            // 화면에 이미 확대되어 보이는 픽셀 크기를 기준으로 다시 계산해서
+            // 타원이 뒤틀려 그려진다. 확대 중에는 호버 낙서를 띄우지 않는다.
+            group.addEventListener('mouseenter', () => {
+                if (!board.classList.contains('zoomed') && !isZooming) annotation.show();
+            });
+            group.addEventListener('mouseleave', () => annotation.hide());
+        });
+    }
+
+    function hideAllAnnotations() {
+        allAnnotations.forEach(a => a.hide());
+    }
+
+    function zoomIn(event, element) {
+        event.stopPropagation();
+        const board = document.getElementById('board');
+        hideAllAnnotations();
+
+        // 줌인된 그룹에만 설명글(caption-desc)이 보이도록 active-zoom 클래스 부여
+        document.querySelectorAll('.group, .qr-section').forEach(g => g.classList.remove('active-zoom'));
+        
+        document.querySelectorAll('.group, .qr-section').forEach(g => {
+            g.style.zIndex = '10'; 
+        });
+        element.classList.add('active-zoom');
+
+        element.style.zIndex = '100'; 
+        element.classList.add('active-zoom');
+
+        board.style.transform = '';
+        const boardRect = board.getBoundingClientRect();
+        
+        // 2. 요소의 위치 측정 (그룹이면 바운딩 박스, QR이면 자기 자신)
+        let cx, cy;
+        if (element.classList.contains('group')) {
+            const cards = element.querySelectorAll('.photo-card');
+            const bounds = getVisualBounds(cards, boardRect);
+            cx = bounds.cx; cy = bounds.cy;
+        } else {
+            const r = element.getBoundingClientRect();
+            cx = r.left + r.width / 2 - boardRect.left;
+            cy = r.top + r.height / 2 - boardRect.top;
+        }
+
+        // 이 중심점이 화면(뷰포트) 정중앙으로 오도록 translate 값을 계산.
+        // transform-origin을 (cx, cy)에 두면 scale은 그 점을 고정시키므로,
+        // 그 점을 화면 중앙(vw/2, vh/2)까지 옮기는 만큼만 추가로 translate 해주면 된다.
+        // board는 left:-100vw / top:-100vh 로 배치되어 있으므로
+        // dx = 1.5*vw - cx, dy = 1.5*vh - cy 가 된다.
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const dx = 1.5 * vw - cx;
+        const dy = 1.5 * vh - cy;
+
+        board.style.transformOrigin = `${cx}px ${cy}px`;
+        board.style.transform = `translate(${dx}px, ${dy}px) scale(${ZOOM_SCALE})`;
+        board.classList.add('zoomed');
+        isZooming = true; // 줌 시작: 애니메이션 잠금
+    }
+
+    function resetZoom(event) {
+        // 1. 줌인 상태가 아니면 무시
+        const board = document.getElementById('board');
+        if (!board.classList.contains('zoomed')) return;
+
+        // 2. 카드(photo-card) 내부의 요소를 클릭했는지 확인 (포인터 투과로 인해 target이 카드일 수 있음)
+        // 클릭된 요소가 board의 자식(카드)이라면 줌아웃 하지 않음
+        // 카드나 QR코드를 클릭한 경우에는 줌아웃하지 않음
+        if (event.target.closest('.photo-card') || event.target.closest('.qr-section')) {
+            return; 
+        }
+
+        document.querySelectorAll('.group, .qr-section').forEach(g => {
+            g.style.zIndex = '10'; 
+        });
+
+        // 3. 빈 배경을 클릭했을 때만 줌아웃 실행
+        hideAllAnnotations();
+        document.querySelectorAll('.group').forEach(g => g.classList.remove('active-zoom'));
+        board.style.transform = '';
+        board.classList.remove('zoomed');
+        
+        // 줌아웃 직후 잠금 해제 (애니메이션 재발동 방지용)
+        isZooming = true;
+        setTimeout(() => { isZooming = false; }, 500);
+    }
+
+    window.addEventListener('load', setupAnnotations);
+</script>
+</body>
+</html>
