@@ -1371,7 +1371,7 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
     if(convo.warning && warnText) warnText.textContent = convo.warning;
 
     demoTimers.push(setTimeout(function(){
-      typeInto(composerText, convo.prompt, 40, function(){
+      typeInto(composerText, convo.prompt, 25, function(){
         sendDot.classList.add('ready');
         demoTimers.push(setTimeout(function(){
           composerText.textContent = '';
@@ -1383,7 +1383,7 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
             demoTimers.push(setTimeout(function(){
               rowThinking.classList.remove('shown');
               rowAnswer.classList.add('shown');
-              typeInto(typedAnswer, convo.answer, 20, function(){
+              typeInto(typedAnswer, convo.answer, 10, function(){
                 if(convo.type === 'warn'){
                   demoTimers.push(setTimeout(function(){
                     rowWarning.classList.add('shown');
@@ -1395,11 +1395,11 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
                   if(nextHint) nextHint.classList.add('show');
                 }
               });
-            }, 1300));
-          }, 350));
-        }, 500));
+            }, 1000));
+          }, 200));
+        }, 100));
       });
-    }, 300));
+    }, 50));
   }
   /* ===================== 02b 해결 데모 (슬라이드 2의 부적절한 질문 2개 → Prompt-Jangseung 적용 결과) =====================
      playDemo()와 뼈대는 같지만, "생각하는 중…" 한 줄 대신 3단계 프로세스 카드를 순서대로
@@ -1534,7 +1534,7 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
     renderProcessCard(convo.steps);
 
     resolvedTimers.push(setTimeout(function(){
-      typeInto(composerText, convo.prompt, 40, function(){
+      typeInto(composerText, convo.prompt, 25, function(){
         sendDot.classList.add('ready');
         resolvedTimers.push(setTimeout(function(){
           composerText.textContent = '';
@@ -1550,16 +1550,16 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
               if(thinkAvatar) thinkAvatar.classList.remove('thinking');
               resolvedTimers.push(setTimeout(function(){
                 rowAnswer.classList.add('shown');
-                typeInto(typedAnswer, convo.answer, 20, function(){
+                typeInto(typedAnswer, convo.answer, 10, function(){
                   resolvedBusy = false;
                   if(nextHint) nextHint.classList.add('show');
                 });
-              }, 450));
+              }, 350));
             });
-          }, 350));
-        }, 500));
+          }, 250));
+        }, 400));
       });
-    }, 300));
+    }, 200));
   }
 
   /* ===================== 03 파이프라인: 클릭 시 레이어 등장 =====================
