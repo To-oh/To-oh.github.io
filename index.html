@@ -915,10 +915,10 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
           <h2 class="title-sm">Budget Plan<span class="dot-accent">.</span></h2>
           <div class="plan-grid">
             <div class="plan-left">
-              <div class="label">TOTAL BUDGET (Sample)</div>
-              <div class="amount">₩<span>500,000,000</span></div>
-              <div class="note">※ Sample figures — replace with real data</div>
-              <div class="desc">A first-12-month operating budget centered on development, infrastructure, and model costs. The weighting of each category may shift once the service stabilizes.</div>
+              <div class="label">TOTAL BUDGET</div>
+              <div class="amount">₩<span>225,000,000</span></div>
+              <!--<div class="note">※ Sample figures — replace with real data</div>-->
+              <div class="desc">A first-6-month operating budget centered on development, infrastructure, and model costs. The weighting of each category may shift once the service stabilizes.</div>
             </div>
             <div class="plan-right">
               <svg class="donut-svg" width="210" height="210" viewBox="0 0 230 230" id="donutSvg">
@@ -1713,11 +1713,11 @@ body:not(.mode-mobile) .summary-close p{font-size:18px;}
      "선의 길이"로 잘라 그린다. 자세한 원리는 위 CSS의 9번 섹션 주석 참고. */
   var donutBuilt = false;
   var budgetData = [
-    { label: 'Development & Engineering', pct: 42, amt: '₩210,000,000', color: '#5352ed' },
-    { label: 'AI Model API Costs',        pct: 23, amt: '₩115,000,000', color: '#8b8aff' },
-    { label: 'Infrastructure & Servers',  pct: 15, amt: '₩75,000,000',  color: '#e8b34d' },
-    { label: 'Marketing & Sales',         pct: 12, amt: '₩60,000,000',  color: '#ff7a7a' },
-    { label: 'Operating Reserve',         pct: 8,  amt: '₩40,000,000',  color: '#2ed573' }
+    { label: 'Core Personnel & Engineering Salary', pct: 42, amt: '₩60,000,000', color: '#5352ed' },
+    { label: 'AI R&D & Threat Intelligence Data',        pct: 23, amt: '₩55,000,000', color: '#8b8aff' },
+    { label: 'AI Infrastructure & Model API Usage',  pct: 15, amt: '₩50,000,000',  color: '#e8b34d' },
+    { label: 'B2B Marketing & Business Expansion',         pct: 12, amt: '₩37,500,000',  color: '#ff7a7a' },
+    { label: 'Cloud Hosting & Office Infrastructure',         pct: 8,  amt: '₩22,500,000',  color: '#2ed573' }
   ];
   /* 범례(오른쪽 리스트)는 데이터가 안 바뀌므로 딱 한 번만 DOM에 그려 넣고,
      이후 사업계획 창을 다시 열어도(donutBuilt=true) 다시 그리지 않는다. */
