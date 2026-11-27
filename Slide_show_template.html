@@ -1,0 +1,2232 @@
+<!--
+================================================================================
+  PRESENTATION TEMPLATE  (단일 HTML 프레젠테이션 템플릿)
+  내용은 비우고 구조/디자인은 그대로 유지한 버전
+
+  [변경 이력]
+  v1.3 (2026-11-25)  저울 슬라이드 scale 추가 -- 왼쪽 접시에 작은 숫자만큼 동전, 오른쪽은 비어 있다가 클릭하면 동전이 과장되게 쏟아지며 저울이 기울어짐
+  v1.2 (2026-11-25)  강조 비교 슬라이드 emphasis 추가 (kind: bar / donut / bubble -- 처음엔 정확한 비율, 클릭하면 강조 대상만 키우고 나머지 축소)
+                     슬라이드 내 단계(build) 애니메이션: build:true 면 클릭할 때마다 항목이 하나씩 등장, buildAnim 으로 효과 선택,
+                     ← / 우클릭으로 한 단계씩 되돌리기, 푸터에 단계 점 표시(DECK.stepDots)
+  v1.1 (2026-11-25)  슬라이드 type 7종 추가: keyfacts / stakeholders / timeline / questionnaire /
+                     respondents / findings / sources
+                     공통 기능 추가: presenter(발표자 표시), notes(발표자 노트, N 키), 타이머(T/R 키),
+                     DECK.maxSlides(슬라이드 수 경고), 표지 없는 덱의 번호 자동 보정
+                     차트: doughnut(도넛) / horizontal(가로 막대) 지원
+  v1.0               최초 버전(cover / charts / intro / toc / chapter / conclusion)
+================================================================================
+
+■ 사용법 (사람)
+  1. <script> 안의 "★ 수정 영역"만 고치세요: DECK(전체 설정) / SIDES(비교 대상 색) / SLIDES(슬라이드 목록).
+  2. 슬라이드 HTML, 목차(TOC), 페이지 번호(n / N), 챕터 번호(01. 02.), 이동 규칙은 전부 자동 생성됩니다.
+  3. 챕터 추가 = chapter 블록 통째로 복사 → 붙여넣기 → 내용만 변경.
+  4. 이미지 칸을 비워 두면(img: '') 회색 플레이스홀더가 자동으로 표시됩니다.
+  5. 조작: 클릭 / → / Space / Enter = 다음,  우클릭 / ← = 이전 (챕터 본문에서 우클릭 = 목차로 복귀),  Esc = 커서 핑.
+  6. 발표 도구: N = 발표자 노트 패널 켜기/끄기,  T = 타이머 켜기/끄기,  R = 타이머 리셋.
+     (발표자(presenter)가 바뀌는 슬라이드로 넘어가면 타이머가 자동으로 0부터 다시 시작)
+  7. 단계 애니메이션: build:true 슬라이드는 클릭 / → / Space 를 누를 때마다 한 단계씩 진행, 마지막 단계 다음 클릭에서 다음 슬라이드로.
+     ← / 우클릭 = 한 단계 뒤로(첫 단계에서 한 번 더 = 이전 슬라이드). 이전 슬라이드로 돌아오면 완성된 상태로 보임.
+
+■ 사용법 (AI에게 시킬 때) — 아래 프롬프트를 그대로 써도 됩니다
+  "이 템플릿의 SLIDES 데이터만 [주제] 내용으로 채워줘. CSS/JS 로직은 건드리지 마.
+   새 슬라이드가 필요하면 아래 DESIGN LANGUAGE 를 따라 기존 type 을 재사용하고,
+   정말 새 형태가 필요할 때만 BUILDERS 에 새 type 을 추가해."
+
+================================================================================
+  🎨 DESIGN LANGUAGE (디자인 언어 요약) — AI가 이 스타일을 그대로 이어가기 위한 가이드
+================================================================================
+
+[A. 전체 분위기]
+  - 다크 시네마틱 / 에디토리얼. 거의 검은 배경(#050505) 위에 흰 글자 + 은은한 투명 카드.
+  - "빛(glow)"과 "숨쉬는 움직임"이 시그니처: 제목 끝 점이 깜빡이고, 빛 구체가 펄스하고, 큰 글자가 빛난다.
+  - 장식은 최소화. 카드는 border 1px + 아주 옅은 배경(rgba(255,255,255,0.02))만 사용. 그림자/그라데이션 남발 금지.
+
+[B. 색상 토큰]
+  - 배경      : #050505 (본문) / #090909 (목차 우측) / linear-gradient(#050505 → #0c140f) (목차 좌측)
+  - 글자      : #fff (제목) / rgba(255,255,255,.7) (본문) / .6 (카드 설명) / .4 (푸터) / .3 (힌트)
+  - 포인트 1  : #2ed573 (초록) = 시스템 강조색: 체크 ✓, 목차 호버 막대, 카테고리 태그, 화살표 선, 인용 따옴표, 클릭 커서
+  - 포인트 2  : #5352ed (보라) = 제목 끝 점(.), 태그의 구분 글자, 차트 카드 제목의 왼쪽 막대
+  - 비교 대상 색: SIDES 의 color (카드 배지, 차트 색, 메트릭 강조). 대상이 2개면 보라/초록 계열 권장.
+  - 선/테두리 : rgba(255,255,255, .04 ~ .1) 의 아주 옅은 흰색. 진한 선 금지.
+
+[C. 타이포그래피]
+  - 폰트: 'Poppins' + 'Noto Sans KR' (Google Fonts). 굵기는 300(설명) / 700(소제목) / 900(제목·숫자) 세 단계만 씀.
+  - 제목(h1.main-title): 900, 4.8rem (챕터 슬라이드는 3rem), letter-spacing -1px, line-height 1.3
+  - 모든 제목 끝에는 깜빡이는 점 <span class="dot">.</span> (보라색, 자동 삽입)
+  - 작은 라벨(태그/카테고리): 대문자 + 넓은 letter-spacing (2~6px) + 700
+  - 크기 단위는 전부 rem (1920x1080 기준 1rem=16px). JS가 html font-size 를 화면에 맞춰 바꿔 전체가 비례 확대/축소됨.
+    → 새 CSS 를 쓸 때도 px 대신 rem 사용. (px ÷ 16 = rem)
+
+[D. 레이아웃 규칙]
+  - 모든 슬라이드: 위 공통 헤더(태그 + 번호 / 이모지, 아래 옅은 구분선) + 아래 공통 푸터(왼쪽 문구 / 오른쪽 "n / N").
+  - 슬라이드 안쪽 여백 3.75rem 5rem. 카드 사이 간격 2.1875rem. 카드 모서리 둥글기 1.5rem (차트 카드 1.25rem).
+  - 본문은 .content-container (column = 위 제목 + 아래 콘텐츠) 또는 좌/우 2열(.left-col / .right-col).
+  - 카드 그리드는 장수에 맞춰 열 수(--cols)를 JS가 지정: 1~4장 한 줄, 5장 이상 두 줄.
+
+[E. 시그니처 요소 — 이것들이 이 디자인의 "말투"입니다]
+  1) 커스텀 커서: 기본 포인터 숨김, 반투명 흰 원이 마우스를 따라다님.
+        호버 가능 요소 위 = 커짐 / 클릭 중 = 초록 원 / Esc = 핑(파동) 이펙트.
+  2) 빛 구체(.glow-sphere): 블러된 radial-gradient 원이 4초 주기로 커졌다 작아졌다(pulse). 표지 뒤에 깔림.
+  3) 거대 글자(.giant-text): 10rem. 'outline'(투명 + 얇은 흰 테두리) 두 줄 사이에 'fill'(빛나는 흰 글자, glow-pulse 3초) 한 줄을 끼움.
+  4) ★ 카드 연결(TOC ↔ 챕터 FLIP 전환): 목차 카드를 클릭하면
+        ① 목차가 페이드아웃 → ② 카드의 제목이 "날아가는 제목(.flying-title)"이 되어 본문 제목 위치/크기로 이동
+        → ③ 동시에 목차의 화살표(→)에서 본문 제목까지 초록 곡선 화살표(.trace-path, SVG 베지어)가 그려짐
+        → ④ 본문 카드 그리드가 페이드인. 우클릭하면 같은 동작이 역방향으로 재생됨.
+        목차 카드는 호버 시: 왼쪽에 초록 세로 막대가 자라나고, 큰 번호가 초록으로 물들며, 화살표가 오른쪽으로 밀림.
+        (구현: animateTOCToSlide / animateSlideToTOC / animateArrowTrace — 좌표는 getBoundingClientRect 로 실측)
+  5) ★ 배경 이미지(.conclusion-bg): 결론 슬라이드는 이미지를 풀스크린 배경으로 깔되
+        ① 좌우 반전(scaleX(-1)) ② 불투명도 .35 ③ 슬라이드가 활성화될 때 1.5초에 걸쳐 서서히 나타남 ④ 내용은 z-index 1 로 그 위에.
+        배경 이미지는 "어둡고 분위기 있는 사진"을 쓰면 글자 가독성이 유지됨.
+  6) 떠다니는 비눗방울(.floating-obj): 표지에 투명 SVG/PNG 를 절대 위치로 흩뿌리고 arc / float / breathe / spin 애니메이션 부여.
+  7) 비교 카드(.unified-card): 16:9 이미지 + 좌상단 알약형 배지(SIDES 색) + 제목/설명. 호버 시 이미지 5% 확대, 클릭 시 라이트박스.
+  8) 차트 카드(.chart-card): 아래에서 위로 올라오며 페이드인, 카드마다 0.1s 간격 지연(stagger). 차트는 진입할 때마다 새로 그려 애니메이션 재생.
+  9) 결론 인용 카드(.final-quote-card): 좌상단 “ 와 우하단 ”(180° 회전) 초록 따옴표로 대칭 장식, 이탤릭 굵은 글씨.
+ 10) 슬라이드 전환: opacity 페이드 .6s. 이웃한 두 슬라이드가 모두 fade:true 면 더 느린 .8s 페이드.
+
+[F. 슬라이드 type 카탈로그 (기존 type 을 최대한 재사용할 것)]
+  cover      표지: 부제 / 큰 제목 / 설명 / 힌트 + 비눗방울(선택)
+  charts     차트 대시보드: 차트 카드 1~3개 + 요약(metrics) 카드 1개(선택)
+  intro      좌: 제목+설명 / 우: 거대 글자 3줄
+  toc        목차: 좌(제목·통계·숨은 점프 버튼) / 우(챕터 카드 목록 — chapter 슬라이드에서 자동 수집)
+  chapter    본문: 제목 + 비교 카드 1~N장 (목차와 FLIP 연결됨)
+  conclusion 결론: 체크 리스트 + 설명 + 인용 카드 + 배경 이미지
+  keyfacts      핵심 수치: 큰 숫자 카드 1~4개 (이전값 → 현재값 + 변화율 알약)
+  stakeholders  이해관계자: 입장 카드 1~6개 (SIDES 배지 + 이름/직함 + 인용문)
+  timeline      타임라인: 시간순 사건 2~6개 (hl:true 인 항목은 초록 강조)
+  questionnaire 설문지: Q번호 + 질문 + 목적 + 응답 유형 (3~5문항 권장)
+  respondents   응답자: 프로필 카드(최대 12) + 오른쪽 분포 막대(연령/성별 등 자동 비율)
+  findings      조사 결과: 문항별 차트(bar / line / doughnut / 가로 막대) 1~3개 + 대표 답변 인용
+  sources       출처: 번호 목록 + 각주(데이터 확인 필요 사항 등)
+  emphasis      강조 비교: 숫자 비교를 "크기"로 보여줌. kind = 'bar' | 'donut' | 'bubble'.
+                첫 화면은 수치에 맞는 정확한 그림 → 클릭할 때마다 steps[] 의 대상만 크게 키우고 나머지는 줄임(+ 큰 숫자 + 설명 문장)
+  scale         저울: 돈 비교 전용 강조 슬라이드. 왼쪽 접시에 동전이 쌓여 있고 오른쪽은 빈 상태 → 클릭하면 오른쪽에 동전이 과장되게 쌓이며
+                저울이 기울어짐(+ 큰 숫자 + 설명). 접시 위 동전 수는 실제 금액이 아니라 "느낌"을 위한 과장값
+  ※ 모든 type 공통 필드: presenter(우상단 발표자 표시), notes(발표자 노트 — N 키), build / buildAnim(단계 애니메이션)
+  ※ 새 type 이 필요하면: (1) BUILDERS 에 함수 추가 (2) 필요한 CSS 를 위 디자인 토큰대로 작성 (3) SLIDES 에서 type 으로 호출.
+
+[G. 하지 말 것]
+  - 흰 배경/밝은 카드, 진한 테두리, 강한 그림자, 원색 배경 면적 큰 블록 사용 금지.
+  - 위 두 포인트색(초록/보라) 외의 새 강조색을 임의로 추가하지 말 것 (비교 대상 색은 SIDES 에서만 추가).
+  - px 단위 하드코딩 금지 (rem 사용).
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Title</title>
+
+    <!-- 차트 라이브러리 (charts 슬라이드를 안 쓰면 이 줄은 지워도 됨) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- 폰트 (원본 @import 의 오타 'wght=' 를 바로잡아 <link> 로 교체) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,700;0,900;1,300&family=Noto+Sans+KR:wght@300;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+         *  0. 크기 체계 (가장 중요!)
+         *  - 모든 크기를 rem 으로 씁니다. (1rem = 기본 16px, 1920x1080 기준)
+         *  - JS(applyScale)가 <html> 의 font-size 를 화면 크기에 맞춰 바꾸므로
+         *    rem 으로 쓴 모든 요소가 한꺼번에 비례해서 커지고 작아집니다.
+         *  - 새로 CSS 를 쓸 때도 px 대신 rem 을 쓰세요. (px ÷ 16 = rem)
+         * ============================================================ */
+        html { font-size: 16px; } /* JS가 덮어씀. JS 실행 전 기본값 */
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* 🎨 DESIGN: 거의 검은 배경(#050505) + 흰 글자. 폰트는 Poppins(영문) + Noto Sans KR(한글), 굵기 300/700/900 만 사용 */
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+            overflow: hidden;
+        }
+
+        /* ============================================================
+         *  1. 커스텀 마우스 커서 (기본 포인터는 숨김)
+         * ============================================================ */
+        body, .presentation, .slide, .toc-card, .unified-card, canvas, #image-modal, .card-image-wrapper, .hidden-jump-btn, #toc-fab {
+            cursor: none !important;
+        }
+        /* 🎨 DESIGN [시그니처 1: 커스텀 커서] 기본 포인터를 숨기고 반투명 흰 원이 마우스를 따라다님.
+         *   기본=작은 원 → 클릭 가능 요소 위(.hover-active)=커짐 → 클릭 중(.click-active)=초록 원 */
+        .custom-cursor {
+            position: fixed; top: 0; left: 0;
+            width: .875rem; height: .875rem;
+            background-color: rgba(255, 255, 255, 0.1);           /* 기본: 반투명 회색 */
+            border-radius: 50%;
+            pointer-events: none; z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: width .3s cubic-bezier(0.25, 1, 0.5, 1), height .3s cubic-bezier(0.25, 1, 0.5, 1),
+                        background-color .3s ease, border .3s ease;
+        }
+        /* 클릭 가능한 요소 위: 커지고 선명해짐 */
+        .custom-cursor.hover-active {
+            width: 3.125rem; height: 3.125rem;
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        /* 클릭 중: 맑은 초록색 원 */
+        .custom-cursor.click-active {
+            width: 4.0625rem; height: 4.0625rem;
+            background-color: rgba(46, 213, 115, 0.15);
+            border: 2px solid rgba(46, 213, 115, 0.35);
+        }
+        /* Esc 핑 효과 */
+        .cursor-ping {
+            position: fixed; top: 0; left: 0;
+            width: 3.75rem; height: 3.75rem;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none; z-index: 10000;
+            transform: translate(-50%, -50%) scale(0); opacity: 0;
+        }
+        .cursor-ping.animate { animation: ping-burst .5s ease-out forwards; }
+        @keyframes ping-burst {
+            0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            10%  { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+        }
+
+        /* ============================================================
+         *  2. 프레젠테이션 / 슬라이드 공통
+         *  - 슬라이드는 전부 겹쳐 놓고 .active 인 것만 보이게 합니다.
+         * ============================================================ */
+        .presentation { position: relative; width: 100vw; height: 100vh; }
+
+        .slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; visibility: hidden;
+            transition: opacity .6s ease, visibility .6s ease;
+            padding: 3.75rem 5rem;
+            display: flex; flex-direction: column;
+        }
+        .slide.active { opacity: 1; visibility: visible; }
+        /* 지정된 슬라이드 사이(데이터의 fade:true)에서만 쓰는 느린 페이드 */
+        .slide.fade-transition { transition: opacity .8s cubic-bezier(0.25, 1, 0.5, 1), visibility .8s; }
+
+        /* 공통 헤더/푸터 */
+        .slide-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: .9375rem; z-index: 10;
+        }
+        .slide-tag { font-size: 1.05rem; font-weight: 700; letter-spacing: 2px; color: rgba(255, 255, 255, 0.6); }
+        .slide-tag span { color: #5352ed; }
+        .slide-footer {
+            position: absolute; bottom: 1.875rem; left: 5rem; right: 5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 1.05rem; color: rgba(255, 255, 255, 0.4); z-index: 10;
+        }
+
+        /* ============================================================
+         *  3. 타이포그래피 & 본문 레이아웃
+         * ============================================================ */
+        .content-container {
+            flex: 1; display: flex; align-items: flex-start;
+            gap: 3.125rem; padding: 3.75rem 0 5rem 0;
+            position: relative; width: 100%; overflow: hidden;
+        }
+        .content-container.column { flex-direction: column; align-items: flex-start; justify-content: flex-start; }
+        .left-col  { flex: 1; padding-left: 0; }
+        .right-col { flex: 1.2; display: flex; justify-content: center; align-items: center; position: relative; align-self: center; }
+
+        h1.main-title {
+            font-size: 4.8rem; font-weight: 900; line-height: 1.3;
+            margin-bottom: 1.5625rem; letter-spacing: -1px;
+            position: relative; z-index: 100; opacity: 1;
+        }
+        /* 카드가 들어가는 본문(chapter) 슬라이드는 제목을 줄여 카드 공간을 확보 */
+        .slide.chapter h1.main-title, .slide.chapter-part h1.main-title { font-size: 3rem; margin-bottom: 1.25rem; }
+        .em-kicker { font-size: 1.15rem; font-weight: 700; letter-spacing: .25rem; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+
+        /* 제목 끝의 점: 숨쉬듯 깜빡임 (원본엔 keyframes 정의가 빠져 있어 새로 추가) */
+        .dot { color: #5352ed; display: inline-block; animation: dot-pulse 1.5s infinite ease-in-out !important; }
+        @keyframes dot-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(1.25); } }
+
+        p.description { font-size: 1.6rem; color: rgba(255, 255, 255, 0.7); line-height: 1.7; }
+
+        /* ============================================================
+         *  4. 비주얼 오브젝트 (빛 구체, 거대 글자)
+         * ============================================================ */
+        /* 🎨 DESIGN [시그니처 2: 빛 구체] 블러된 radial-gradient 원이 4초 주기로 숨쉬듯 커졌다 작아짐.
+         *   .cover 변형은 초록+보라 혼합 광원으로 표지 뒤에 깔림. 카드/텍스트 뒤 은은한 광원이 필요할 때 재사용. */
+        .glow-sphere {
+            position: absolute; width: 18.75rem; height: 18.75rem;
+            background: radial-gradient(circle, rgba(83, 82, 237, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+            filter: blur(1.25rem); animation: pulse 4s infinite alternate;
+        }
+        .glow-sphere.cover {
+            width: 28.125rem; height: 28.125rem;
+            background: radial-gradient(circle, rgba(46,213,115,0.25) 0%, rgba(83,82,237,0.15) 50%, rgba(0,0,0,0) 70%);
+        }
+        @keyframes pulse { 0% { transform: scale(1); opacity: .6; } 100% { transform: scale(1.2); opacity: .9; } }
+
+        .giant-text-wrapper { display: flex; flex-direction: column; gap: .625rem; text-align: center; }
+        /* 🎨 DESIGN [시그니처 3: 거대 글자] outline(투명+얇은 테두리) 줄들 사이에 fill(빛나는 글자) 한 줄을 끼워 강조 */
+        .giant-text { font-size: 10rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px; line-height: .9; }
+        .giant-text.outline { color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2); }
+        .giant-text.fill {
+            color: #f0f0f0;
+            text-shadow: 0 0 15px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.2), 0 0 80px rgba(255,255,255,0.1);
+            animation: glow-pulse 3s infinite alternate ease-in-out;   /* 3초 주기로 숨쉬는 빛 */
+        }
+        @keyframes glow-pulse {
+            from { text-shadow: 0 0 10px rgba(255,255,255,0.1), 0 0 20px rgba(255,255,255,0.05), 0 0 40px rgba(255,255,255,0.02); }
+            to   { text-shadow: 0 0 30px rgba(255,255,255,0.6), 0 0 100px rgba(255,255,255,0.4), 0 0 300px rgba(255,255,255,0.3); }
+        }
+
+        /* ============================================================
+         *  5. 비교 카드 그리드 (chapter 슬라이드)
+         *  - 카드 장수(1~4+)에 맞춰 열 수(--cols)를 JS가 지정합니다.
+         *  - 카드 색(배지)은 --side-color 로 국가별 색을 받습니다 (SIDES 설정).
+         * ============================================================ */
+        .unified-grid {
+            display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+            gap: 2.1875rem; width: 100%; opacity: 1; transition: opacity .4s ease;
+        }
+        .unified-grid[data-n="1"] { max-width: 56rem; }      /* 카드 1장이면 너무 커지지 않게 */
+        .card-image-wrapper {
+            position: relative; width: 100%; aspect-ratio: 16 / 9;
+            overflow: hidden; background-color: #111; flex-shrink: 0;
+        }
+        /* 🎨 DESIGN [시그니처 7: 비교 카드] 옅은 유리 느낌 카드(배경 .02 + 테두리 .05, 모서리 1.5rem).
+         *   위: 16:9 이미지(+좌상단 알약 배지, 색=--side-color) / 아래: 제목(700) + 설명(300). 호버 시 이미지 확대. */
+        .unified-card {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem; overflow: hidden;
+            display: flex; flex-direction: column; height: 100%;
+        }
+        .card-img { width: 100%; height: 100%; object-fit: cover; opacity: .75; transition: transform .5s ease; }
+        .unified-card:hover .card-img { transform: scale(1.05); }
+        .card-badge {
+            position: absolute; top: 1.25rem; left: 1.25rem;
+            padding: .375rem .875rem; font-size: .95rem; font-weight: 900; letter-spacing: 1.5px;
+            border-radius: 1.875rem; z-index: 2; color: #fff; background: var(--side-color, #5352ed);
+        }
+        .card-info { padding: 1.5625rem 1.875rem; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .card-info h3 { font-size: 1.9rem; font-weight: 700; margin-bottom: .625rem; color: #fff; }
+        .card-info p  { font-size: 1.3rem; color: rgba(255, 255, 255, 0.6); line-height: 1.6; font-weight: 300; }
+
+        /* ============================================================
+         *  6. 결론 슬라이드
+         * ============================================================ */
+        .conclusion-list { list-style: none; display: flex; flex-direction: column; gap: .9375rem; }
+        .conclusion-list li {
+            font-size: 1.8rem; color: rgba(255, 255, 255, 0.8);
+            padding-left: 1.5625rem; position: relative; font-weight: 300;
+        }
+        .conclusion-list li::before { content: "✓"; position: absolute; left: 0; color: #2ed573; font-weight: 900; }
+        .conclusion-list li strong { color: #fff; font-weight: 700; margin-right: .625rem; }
+
+        .slide.conclusion { overflow: hidden; }
+        /* 🎨 DESIGN [시그니처 5: 배경에 이미지 두기]
+         *   - 이미지를 슬라이드 전체(absolute, 100%x100%)에 background-size:cover 로 깔고
+         *   - transform:scaleX(-1) 로 좌우 반전 (원본 구도와 다르게 보이게 + 오른쪽 인용 카드와 균형)
+         *   - 평소 opacity:0 → 슬라이드 .active 가 되면 .35 로 1.5초 동안 서서히 나타남 (아래 .slide.conclusion.active .conclusion-bg)
+         *   - z-index:0, 내용(.content-container)은 z-index:1 로 그 위에 올림, pointer-events:none 으로 클릭 방해 금지
+         *   → 다른 슬라이드에 배경 이미지를 넣을 때도 이 4가지(반전/낮은 불투명도/페이드인/z-index 분리)를 그대로 따라 할 것 */
+        .conclusion-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            transform: scaleX(-1);                                  /* 좌우 반전 */
+            opacity: 0; transition: opacity 1.5s ease-in-out;
+            z-index: 0; pointer-events: none;
+        }
+        .slide.conclusion.active .conclusion-bg { opacity: .35; }   /* 활성화되면 서서히 나타남 */
+        .slide.conclusion .content-container { z-index: 1; background: transparent; gap: 2.5rem; }
+        .conclusion-body-wrapper { display: flex; align-items: stretch; gap: 3.75rem; width: 100%; }
+        .conclusion-left-body  { flex: 1.2; display: flex; flex-direction: column; justify-content: space-between; }
+        .conclusion-right-body { flex: 1; display: flex; align-items: stretch; }
+        .conclusion-left-body .description { margin-top: 1.25rem; padding-top: 1.875rem; font-size: 1.5rem; line-height: 1.6; }
+        /* 🎨 DESIGN [시그니처 9: 인용 카드] 좌상단 “ / 우하단 ”(180° 회전) 초록 따옴표(opacity .4)로 대칭 장식 */
+        .final-quote-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1.5rem; padding: 5.4rem 6rem; text-align: center; width: 100%;
+            min-height: 12.5rem; max-height: 80%; position: relative;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .final-quote-card::before, .final-quote-card::after {
+            content: "“"; position: absolute; font-size: 5rem; font-family: 'Poppins', sans-serif;
+            color: #2ed573; opacity: .4;
+        }
+        .final-quote-card::before { top: 1.875rem; left: 2.5rem; }
+        .final-quote-card::after  { bottom: 1.875rem; right: 2.5rem; transform: rotate(180deg); }   /* 대칭 */
+        .final-quote-card p { font-size: 1.9rem; font-weight: 700; line-height: 1.5; color: #fff; font-style: italic; }
+
+        /* ============================================================
+         *  7. 이미지 확대 라이트박스
+         * ============================================================ */
+        .img-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity .4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .img-modal.active { opacity: 1; pointer-events: auto; }
+        .img-modal img {
+            max-width: 85%; max-height: 85%; object-fit: contain; border-radius: 1rem;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: scale(.9) translateY(1.25rem);
+            transition: transform .4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .img-modal.active img { transform: scale(1) translateY(0); }
+
+        /* ============================================================
+         *  8. 목차(TOC) 슬라이드: 좌(제목) / 우(챕터 카드 목록)
+         * ============================================================ */
+        #slide-toc .content-container {
+            position: absolute; top: 3.75rem; left: 0; width: 100%; height: calc(100% - 7.1875rem);
+            padding: 0; gap: 0; display: flex;
+        }
+        .toc-left {
+            flex: 1; height: 100%; padding: 3.75rem 3.75rem 2.8125rem 5rem;
+            display: flex; flex-direction: column; justify-content: space-between; position: relative;
+            background: linear-gradient(to bottom, rgba(5,5,5,1), rgba(12,20,15,1));
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .category-tag { color: #2ed573; font-size: .85rem; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; margin-bottom: .9375rem; }
+        .toc-footer-stats { display: flex; gap: 3.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5625rem; }
+        .toc-footer-stats .num { font-size: 2.5rem; font-weight: 900; color: #2ed573; line-height: 1; }
+        .toc-footer-stats .lbl { font-size: 1rem; color: rgba(255,255,255,0.4); margin-top: .5rem; letter-spacing: 1px; }
+
+        .toc-right {
+            /* 챕터 개수에 따라 JS가 --cols(열 수), --k(글자/여백 배율)를 지정 → 몇 개를 넣어도 칸이 균등하게 나뉨 */
+            flex: 1.2; height: 100%; background: #090909; transition: opacity .4s ease;
+            display: grid; grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr);
+        }
+        /* 🎨 DESIGN [시그니처 4-a: 목차 카드] 카드 경계는 아주 옅은 하단선뿐. 호버하면
+         *   (1) ::before 초록 세로 막대가 scaleY 0→1 로 자라남  (2) 큰 번호(.toc-num)가 초록으로 물들며 커짐  (3) 화살표(→)가 오른쪽으로 이동.
+         *   이 화살표(.toc-arrow)가 챕터로 갈 때 "초록 곡선 화살표 선"의 출발점이 됨. */
+        .toc-card {
+            border-bottom: 1px solid rgba(255,255,255,0.04); padding: 0 calc(3.75rem * var(--k, 1)); min-height: 0;
+            display: flex; align-items: center; gap: calc(2.5rem * var(--k, 1)); position: relative; transition: background-color .4s ease;
+        }
+        .toc-card::before {                                         /* 호버 시 왼쪽에 나타나는 초록 막대 */
+            content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%;
+            background-color: #2ed573; transform: scaleY(0); transition: transform .3s ease;
+        }
+                .toc-card:hover { background: rgba(46,213,115,0.02); }
+        .toc-card:hover::before { transform: scaleY(1); }
+        .toc-num { font-size: calc(3.5rem * var(--k, 1)); font-weight: 900; color: rgba(255,255,255,0.04); transition: color .3s ease, transform .3s ease; }
+        .toc-card:hover .toc-num { color: rgba(46,213,115,0.2); transform: scale(1.05); }
+        .toc-info { flex: 1; }
+        .toc-step { font-size: calc(1rem * var(--k, 1)); color: #2ed573; font-weight: 700; letter-spacing: 2px; margin-bottom: .5rem; }
+        .target-anchor { font-size: calc(1.5rem * var(--k, 1)); color: #fff; margin-bottom: calc(.625rem * var(--k, 1)); font-weight: 900; display: block; line-height: 1.3; }
+        .toc-info p { font-size: calc(1.3rem * var(--k, 1)); color: rgba(255,255,255,0.5); line-height: 1.5; }
+        .toc-arrow { font-size: calc(1.8rem * var(--k, 1)); color: rgba(255,255,255,0.1); transition: all .3s ease; }
+        .toc-card:hover .toc-arrow { color: #2ed573; transform: translateX(.5rem); }
+
+        /* 목차 좌측 하단의 숨겨진 '결론으로 이동' 버튼 (마우스를 올리면 보임) */
+        .hidden-jump-btn {
+            position: absolute; bottom: 2.8125rem; left: 38%; width: 12.5rem; height: 2.5rem; z-index: 100;
+            opacity: 0; border: none; background: none; transition: opacity .3s ease;
+            font-weight: bold; color: #8888883e; font-size: 1.2rem; padding: .625rem;
+        }
+        .hidden-jump-btn:hover { opacity: 1; }
+
+        /* ============================================================
+         *  9. 차트 대시보드 슬라이드 (카드 수에 맞춰 열 수 자동: --cols)
+         * ============================================================ */
+        /* 🎨 DESIGN [시그니처 8: 차트 카드] 카드는 처음에 opacity 0 + 아래 1.25rem → 슬라이드가 active 되면 위로 올라오며 페이드인,
+         *   nth-child 별로 transition-delay 를 .1s 씩 늘려 순차 등장(stagger). 카드 제목 왼쪽에 보라색 3px 막대. */
+        .chart-dashboard { display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr); gap: 1.5625rem; width: 100%; height: 75%; }
+        .chart-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 1.25rem; padding: 1.5625rem; display: flex; flex-direction: column;
+            opacity: 0; transform: translateY(1.25rem);
+            transition: opacity .8s cubic-bezier(0.22,1,0.36,1), transform .8s cubic-bezier(0.22,1,0.36,1);
+        }
+        .slide.active .chart-card { opacity: 1; transform: translateY(0); }
+        .slide.active .chart-card:nth-child(1) { transition-delay: .1s; }
+        .slide.active .chart-card:nth-child(2) { transition-delay: .2s; }
+        .slide.active .chart-card:nth-child(3) { transition-delay: .3s; }
+        .slide.active .chart-card:nth-child(4) { transition-delay: .4s; }
+        .chart-card h4 { font-size: 1.6rem; color: rgba(255,255,255,0.7); margin-bottom: 1.25rem; font-weight: 500; border-left: 3px solid #5352ed; padding-left: .625rem; }
+        .canvas-container { position: relative; flex: 1; width: 100%; min-height: 13.75rem; }
+        .info-summary-card { justify-content: space-between; }
+        .metric-row { display: flex; flex-direction: column; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: .625rem; margin-bottom: .625rem; }
+        .metric-row:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
+        .m-title  { font-size: 1rem; color: rgba(255,255,255,0.4); margin-bottom: .25rem; }
+        .m-values { font-size: 1.2rem; color: rgba(255,255,255,0.8); display: flex; gap: .5rem; }
+        .m-values .bar { color: rgba(255,255,255,0.15); }
+        .m-values .hl  { color: var(--side-color, #fff); font-weight: bold; }   /* 강조: 해당 국가 색 */
+
+        /* ============================================================
+         *  10. 표지 슬라이드 & 떠다니는 비눗방울
+         * ============================================================ */
+        .intro-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; }
+        .intro-subtitle { font-size: 1.2rem; font-weight: 700; letter-spacing: .375rem; color: #2ed573; margin-bottom: 1.25rem; text-transform: uppercase; }
+        .intro-title { font-size: 12rem; font-weight: 900; line-height: 1.15; letter-spacing: -2px; margin-bottom: 1.875rem; }
+        .intro-desc  { font-size: 1.5rem; color: rgba(255,255,255,0.6); max-width: 37.5rem; line-height: 1.8; font-weight: 300; }
+        .intro-hint  { position: absolute; bottom: 1.25rem; font-size: .85rem; color: rgba(255,255,255,0.3); letter-spacing: 2px; animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+        /* 🎨 DESIGN [시그니처 6: 떠다니는 오브젝트] 투명 배경 SVG/PNG 를 절대 위치로 배치(z-index 최상단, 클릭 통과)하고
+         *   anim-arc(흔들림) / anim-float(위아래) / anim-breathe(커졌다작아짐) / anim-spin(3D 회전) 중 하나를 부여.
+         *   크기/위치는 SLIDES 의 bubbles 데이터에서 지정 (1920x1080 기준 px). */
+        .floating-obj { position: absolute; z-index: 9999; pointer-events: none; }   /* 크기/위치는 데이터에서 지정 */
+        .anim-spin    { animation: rotate-3d 10s infinite linear; will-change: transform; }
+        .anim-arc     { animation: arc-swing 6s infinite ease-in-out; transform-origin: center -6.25rem; }
+        .anim-float   { animation: float-y 8s infinite ease-in-out; }
+        .anim-breathe { animation: breathe 4s infinite ease-in-out; }
+        @keyframes rotate-3d { 0% { transform: rotateY(0) rotateX(0); } 50% { transform: rotateY(180deg) rotateX(20deg); } 100% { transform: rotateY(360deg) rotateX(0); } }
+        @keyframes arc-swing { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(2deg); } }
+        @keyframes float-y   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3.125rem); } }
+        @keyframes breathe   { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+        /* ============================================================
+         *  11. TOC ↔ 본문 전환용 (날아가는 제목 / 화살표 선)
+         * ============================================================ */
+        /* 🎨 DESIGN [시그니처 4-b: 카드 연결 전환] 목차 카드의 제목을 복제한 요소(.flying-title)가 fixed 로 떠서
+         *   (출발 rect → 도착 rect, 글자 크기/굵기/줄간격까지 함께) .6s 동안 이동. 동시에 .trace-path(초록 곡선 화살표)가 그려짐.
+         *   → "목차의 이 카드가 저 페이지로 이어진다"는 연결감을 주는 핵심 장치. 챕터가 늘어나도 자동 적용됨. */
+        .flying-title {
+            position: fixed; font-weight: 900; line-height: 1.3; letter-spacing: -1px; color: #fff;
+            z-index: 9999; pointer-events: none; transform-origin: left top; white-space: nowrap;
+        }
+        .fade-out { opacity: 0; transition: opacity .5s ease; }
+        .trace-svg-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9998; }
+        /* 🎨 DESIGN: 초록(#2ed573) 2.5px 둥근 선 + 은은한 초록 drop-shadow(glow). stroke-dashoffset 로 선이 그려지는 효과 */
+        .trace-path { fill: none; stroke: #2ed573; stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(46,213,115,0.5)); }
+
+        /* ============================================================
+         *  13. 신규 슬라이드 type 공통 (v1.1)
+         * ============================================================ */
+        /* 본문이 카드/리스트인 슬라이드는 chapter 처럼 제목을 줄여 공간 확보 */
+        .slide.keyfacts h1.main-title, .slide.stakeholders h1.main-title, .slide.timeline h1.main-title,
+        .slide.questionnaire h1.main-title, .slide.respondents h1.main-title, .slide.findings h1.main-title,
+        .slide.sources h1.main-title { font-size: 3rem; margin-bottom: 1.25rem; }
+
+        /* 알약형 배지 (SIDES 색). card-badge 와 달리 위치 고정이 아니라 흐름 안에 놓임 */
+        .pill {
+            display: inline-block; padding: .375rem .875rem; font-size: .95rem; font-weight: 900; letter-spacing: 1.5px;
+            border-radius: 1.875rem; color: #fff; background: var(--side-color, #5352ed);
+        }
+        .slide-header-right { display: flex; align-items: center; gap: 1.25rem; }
+        .slide-presenter { font-size: 1rem; font-weight: 700; letter-spacing: 3px; color: #2ed573; text-transform: uppercase; }
+        .slide-note { margin-top: 1.5625rem; font-size: 1.4rem; color: rgba(255,255,255,0.5); font-weight: 300; line-height: 1.6; }
+
+        /* 🎨 DESIGN [keyfacts] 옅은 유리 카드 + 큰 숫자(900). 이전 값은 취소선+흐리게, 현재 값은 SIDES 색 */
+        .kf-grid { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 2.1875rem; width: 100%; margin-top: .625rem; }
+        .kf-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 1.5rem;
+            padding: 2.2rem 2.2rem 2rem; display: flex; flex-direction: column; gap: .9rem;
+        }
+        .kf-label { font-size: 1.05rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+        .kf-flow { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+        .kf-from { font-size: 2rem; font-weight: 300; color: rgba(255,255,255,0.3); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
+        .kf-arrow { font-size: 1.6rem; color: #2ed573; }
+        .kf-to { font-size: 3.8rem; font-weight: 900; line-height: 1; letter-spacing: -1px; color: var(--side-color, #fff); }
+        .kf-change { align-self: flex-start; padding: .375rem .875rem; border-radius: 1.875rem; font-size: 1rem; font-weight: 900; letter-spacing: 1.5px; color: #fff; background: var(--side-color, #5352ed); }
+        .kf-desc { font-size: 1.3rem; font-weight: 300; line-height: 1.6; color: rgba(255,255,255,0.6); }
+
+        /* 🎨 DESIGN [stakeholders] 비교 카드와 같은 유리 카드. 상단 알약 배지 → 이름(900) → 직함 → 이탤릭 인용문(초록 따옴표) */
+        .sh-grid { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 1.5rem 2.1875rem; width: 100%; }
+        .sh-card {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 1.5rem;
+            padding: 1.6rem 1.9rem; display: flex; flex-direction: column; gap: .55rem;
+        }
+        .sh-who  { font-size: 1.7rem; font-weight: 900; color: #fff; margin-top: .35rem; }
+        .sh-role { font-size: 1.05rem; letter-spacing: 1px; color: rgba(255,255,255,0.4); }
+        .sh-quote { margin-top: .5rem; font-size: 1.3rem; font-style: italic; font-weight: 300; line-height: 1.6; color: rgba(255,255,255,0.75); }
+        .sh-quote::before { content: "“"; color: #2ed573; opacity: .6; font-size: 2rem; line-height: 0; vertical-align: -.45rem; margin-right: .25rem; font-style: normal; }
+
+        /* 🎨 DESIGN [timeline] 옅은 가로선 위에 점. hl 항목은 초록 점(깜빡임) + 초록 날짜 */
+        .tl-wrap { position: relative; width: 100%; margin-top: 2.5rem; }
+        .tl-line { position: absolute; top: .4375rem; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.12); }
+        .tl-row { position: relative; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 1.875rem; }
+        .tl-item { position: relative; padding-top: 2.2rem; }
+        .tl-dot { position: absolute; top: 0; left: 0; width: .875rem; height: .875rem; border-radius: 50%; background: #050505; border: 2px solid rgba(255,255,255,0.4); }
+        .tl-item.hl .tl-dot { background: #2ed573; border-color: #2ed573; box-shadow: 0 0 .9rem rgba(46,213,115,0.6); animation: dot-pulse 1.5s infinite ease-in-out; }
+        .tl-date  { font-size: 2.2rem; font-weight: 900; line-height: 1.1; color: #fff; }
+        .tl-item.hl .tl-date { color: #2ed573; }
+        .tl-title { font-size: 1.5rem; font-weight: 700; margin: .6rem 0 .4rem; color: #fff; }
+        .tl-desc  { font-size: 1.3rem; font-weight: 300; line-height: 1.6; color: rgba(255,255,255,0.6); }
+
+        /* 🎨 DESIGN [questionnaire] 목차 카드처럼 큰 번호(Q1) + 굵은 질문 + 초록 라벨의 목적 + 오른쪽 응답 유형 알약 */
+        .qn-list { display: flex; flex-direction: column; width: 100%; border-top: 1px solid rgba(255,255,255,0.06); }
+        .qn-row { display: flex; align-items: center; gap: 2.2rem; padding: 1.1rem .5rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .qn-num { min-width: 5.5rem; font-size: 3rem; font-weight: 900; color: rgba(255,255,255,0.12); }
+        .qn-body { flex: 1; }
+        .qn-q { font-size: 1.9rem; font-weight: 700; line-height: 1.35; color: #fff; }
+        .qn-purpose { margin-top: .35rem; font-size: 1.25rem; font-weight: 300; color: rgba(255,255,255,0.55); }
+        .qn-purpose b { margin-right: .6rem; font-size: .95rem; font-weight: 700; letter-spacing: 2px; color: #2ed573; }
+        .qn-type { white-space: nowrap; padding: .375rem .875rem; font-size: .95rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15); border-radius: 1.875rem; }
+
+        /* 🎨 DESIGN [respondents] 왼쪽 프로필 카드 그리드 + 오른쪽 요약 카드(가로 막대, 슬라이드 활성화 시 채워짐) */
+        .rs-body { display: flex; gap: 2.1875rem; width: 100%; align-items: flex-start; }
+        .rs-grid { flex: 2.2; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 1.1rem; align-content: start; }
+        .rs-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 1.25rem; padding: 1.1rem 1.3rem; }
+        .rs-id   { font-size: .95rem; font-weight: 900; letter-spacing: 2px; color: #2ed573; }
+        .rs-main { margin: .3rem 0 .2rem; font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .rs-sub  { font-size: 1.1rem; font-weight: 300; line-height: 1.5; color: rgba(255,255,255,0.5); }
+        .rs-by   { margin-top: .6rem; font-size: .9rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+        .rs-summary { flex: 1; }
+        .bar-row   { margin: .55rem 0 .7rem; }
+        .bar-label { display: flex; justify-content: space-between; font-size: 1.1rem; color: rgba(255,255,255,0.7); }
+        .bar-track { height: .5rem; margin-top: .35rem; border-radius: 1rem; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .bar-fill  { width: 0; height: 100%; border-radius: 1rem; background: var(--side-color, #5352ed); transition: width 1s cubic-bezier(0.22,1,0.36,1) .3s; }
+        .slide.active .bar-fill { width: var(--w); }
+
+        /* 🎨 DESIGN [findings] 차트 카드(chart-card 재사용: 아래에서 올라오며 순차 등장) + 요약 한 줄 + 하단 인용 띠 */
+        .fd-grid { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 1.5625rem; width: 100%; }
+        .fd-card .canvas-container { min-height: 12rem; }
+        .fd-take { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid rgba(255,255,255,0.06); font-size: 1.3rem; font-weight: 300; line-height: 1.6; color: rgba(255,255,255,0.7); }
+        .fd-take b { margin-right: .6rem; font-size: .95rem; font-weight: 700; letter-spacing: 2px; color: #2ed573; }
+        .fd-quotes { display: flex; gap: 1.5625rem; width: 100%; margin-top: 1.5625rem; }
+        .fd-quote { flex: 1; padding: .2rem 0 .2rem 1.2rem; border-left: 2px solid #2ed573; font-size: 1.35rem; font-style: italic; font-weight: 300; line-height: 1.55; color: rgba(255,255,255,0.75); }
+        .fd-quote span { display: block; margin-top: .4rem; font-size: .95rem; font-style: normal; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.4); }
+
+        /* 🎨 DESIGN [sources] 번호(초록) + 제목(700) + 출처 메타(300, 흐리게) */
+        .src-list { display: grid; grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)); gap: 0 3.125rem; width: 100%; }
+        .src-item { display: flex; gap: 1.2rem; padding: .9rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .src-idx   { padding-top: .2rem; font-size: 1.1rem; font-weight: 900; letter-spacing: 2px; color: #2ed573; }
+        .src-title { font-size: 1.6rem; font-weight: 700; line-height: 1.4; color: #fff; }
+        .src-meta  { margin-top: .2rem; font-size: 1.15rem; font-weight: 300; color: rgba(255,255,255,0.6); word-break: break-all; }
+
+        /* ============================================================
+         *  14. 발표 도구: 발표자 노트(N) / 타이머(T, R)
+         * ============================================================ */
+        .notes-panel {
+            position: fixed; left: 15%; right: 15%; bottom: 1.5rem; z-index: 10002;
+            background: rgba(9,9,9,0.94); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem;
+            padding: 1.5rem 2rem; backdrop-filter: blur(10px);
+            opacity: 0; transform: translateY(1rem); pointer-events: none; transition: opacity .3s ease, transform .3s ease;
+        }
+        .notes-panel.show { opacity: 1; transform: none; }
+        .notes-head { display: flex; justify-content: space-between; margin-bottom: .75rem; font-size: .75rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #2ed573; }
+        .notes-body { font-size: 1.15rem; font-weight: 300; line-height: 1.7; color: rgba(255,255,255,0.8); }
+        .notes-warn { margin-top: .75rem; font-size: .95rem; letter-spacing: 1px; color: rgba(255,255,255,0.5); }
+        .timer-hud {
+            position: fixed; top: .9rem; left: 50%; transform: translateX(-50%); z-index: 10002;
+            padding: .4rem 1.1rem; font-size: .9rem; font-weight: 700; letter-spacing: 3px; font-variant-numeric: tabular-nums;
+            color: rgba(255,255,255,0.55); background: rgba(9,9,9,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem;
+            opacity: 0; pointer-events: none; transition: opacity .3s ease;
+        }
+        .timer-hud.show { opacity: 1; }
+        .timer-hud .t { color: rgba(255,255,255,0.9); }
+        .timer-hud.ok .t { color: #2ed573; }                              /* 목표 시간대(min~max) 안 = 초록 */
+        .timer-hud.over .t { color: #fff; animation: blink 1s infinite; }  /* max 초과 = 깜빡임 */
+
+        /* ============================================================
+         *  15. 단계(build) 애니메이션 + 강조 비교(emphasis)  (v1.2)
+         * ============================================================ */
+        /* 🎨 DESIGN [build] data-step 이 붙은 요소는 처음엔 숨겨졌다가(.on 이 붙으면) 아래에서 올라오며 나타남.
+         *   :not(.on) + !important 로 chart-card 등 기존 등장 규칙보다 우선. 효과는 슬라이드의 bx-* 클래스로 바뀜. */
+        .slide [data-step] { transition: opacity .6s ease, transform .6s cubic-bezier(0.22,1,0.36,1); }
+        .slide [data-step]:not(.on) { opacity: 0 !important; transform: translateY(1.25rem) !important; pointer-events: none; }
+        .slide.bx-fade  [data-step]:not(.on) { transform: none !important; }
+        .slide.bx-zoom  [data-step]:not(.on) { transform: scale(.85) !important; }
+        .slide.bx-left  [data-step]:not(.on) { transform: translateX(-2.5rem) !important; }
+        .slide.bx-right [data-step]:not(.on) { transform: translateX(2.5rem) !important; }
+        .slide.no-tr, .slide.no-tr * { transition: none !important; }          /* 단계 상태를 보이지 않는 동안 즉시 되돌릴 때 사용 */
+        .kf-card.on .kf-to, .slide.active .kf-card:not([data-step]) .kf-to { animation: kf-pop .7s cubic-bezier(0.22,1,0.36,1) both; }
+        @keyframes kf-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+
+        .step-dots { display: inline-flex; gap: .35rem; margin-right: 1rem; vertical-align: middle; }
+        .step-dots i { width: .4rem; height: .4rem; border-radius: 50%; background: rgba(255,255,255,0.2); transition: background .3s ease; }
+        .step-dots i.on { background: #2ed573; }
+
+        /* 🎨 DESIGN [emphasis] 왼쪽 무대(stage: 그래프) + 오른쪽 해설(큰 초록 숫자 + 설명 + 'NOT TO SCALE' 알약).
+         *   클릭하면 강조 대상은 커지고 글로우, 나머지는 작아지고 어두워짐. 모든 변화는 .9s 이징 전환. */
+        .em-body { display: flex; gap: 3.75rem; width: 100%; align-items: center; }
+        .em-stage { flex: 1.7; position: relative; min-width: 0; }
+        .em-side { flex: 1; display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+        .em-big  { font-size: 7rem; font-weight: 900; line-height: 1; letter-spacing: -2px; color: #2ed573; text-shadow: 0 0 30px rgba(46,213,115,0.35); transition: opacity .3s ease; }
+        .em-text { font-size: 1.8rem; font-weight: 300; line-height: 1.6; color: rgba(255,255,255,0.75); transition: opacity .3s ease; }
+        .em-tag  { align-self: flex-start; padding: .375rem .875rem; font-size: .95rem; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.5);
+                   border: 1px solid rgba(255,255,255,0.15); border-radius: 1.875rem; opacity: 0; transition: opacity .6s ease; }
+        .slide.em-scaled .em-tag { opacity: 1; }
+
+        /* 막대: 높이는 가장 큰 값 = 100%. 첫 화면엔 25% 눈금선(통계 느낌)이 있고, 강조 상태에서는 사라짐 */
+        .em-bars { display: flex; gap: 1.5rem; height: 27rem; padding-top: 4.5rem; align-items: stretch; }
+        .em-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; transition: flex-grow .9s cubic-bezier(0.22,1,0.36,1); }
+        .em-barwrap { position: relative; flex: 1; min-height: 0; display: flex; align-items: flex-end; border-bottom: 1px solid rgba(255,255,255,0.15); }
+        .em-barwrap::before { content: ''; position: absolute; inset: 0; transition: opacity .6s ease;
+                              background: repeating-linear-gradient(to top, rgba(255,255,255,0.07) 0 1px, transparent 1px 25%); }
+        .slide.em-scaled .em-barwrap::before { opacity: 0; }
+        .em-bar { position: relative; width: 100%; height: 0; background: var(--ca); border: 2px solid var(--c); border-bottom: none; border-radius: .75rem .75rem 0 0;
+                  transition: height .9s cubic-bezier(0.22,1,0.36,1), opacity .6s ease, box-shadow .6s ease; }
+        .em-val { position: absolute; bottom: 100%; left: 0; right: 0; padding-bottom: .5rem; text-align: center; white-space: nowrap;
+                  font-size: 1.4rem; font-weight: 900; color: #fff; transition: font-size .8s cubic-bezier(0.22,1,0.36,1); }
+        .em-lbl { padding-top: .75rem; text-align: center; font-size: 1.35rem; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,0.7); }
+
+        /* 도넛: SVG 원호. 강조 조각은 두꺼워지며 바깥으로 튀어나오고, 나머지는 얇아지고 흐려짐 */
+        .em-donut-row { display: flex; align-items: center; gap: 2.5rem; }
+        .em-donut-wrap { position: relative; flex: none; width: 24rem; aspect-ratio: 1 / 1; }
+        .em-donut-wrap svg { width: 100%; height: 100%; overflow: visible; }
+        .em-seg { fill: none; transition: stroke-width .9s cubic-bezier(0.22,1,0.36,1), opacity .6s ease, transform .9s cubic-bezier(0.22,1,0.36,1), stroke-dasharray 1s cubic-bezier(0.22,1,0.36,1); }
+        .em-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+        .em-center b { font-size: 3.4rem; font-weight: 900; line-height: 1; color: #fff; transition: opacity .3s ease; }
+        .em-center span { margin-top: .5rem; font-size: 1.05rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.5); transition: opacity .3s ease; }
+        .em-legend { flex: 1; max-width: 18rem; display: flex; flex-direction: column; gap: .9rem; }
+        .em-lg { display: flex; align-items: center; gap: .75rem; font-size: 1.4rem; color: rgba(255,255,255,0.8); transition: opacity .5s ease; }
+        .em-lg i { width: .75rem; height: .75rem; border-radius: 50%; flex: none; }
+        .em-lg span { flex: 1; font-weight: 300; }
+        .em-lg b { font-weight: 900; }
+        .em-lg.dim { opacity: .3; }
+
+        /* 버블: 면적이 값에 비례. 강조 대상은 거대하게, 나머지는 작게 */
+        .em-bubbles { display: flex; align-items: center; justify-content: center; gap: 2rem; height: 29rem; }
+        .em-bubble { flex: none; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+                     background: var(--ca); border: 2px solid var(--c);
+                     transition: width .9s cubic-bezier(0.22,1,0.36,1), height .9s cubic-bezier(0.22,1,0.36,1), opacity .6s ease, box-shadow .6s ease, transform .9s cubic-bezier(0.22,1,0.36,1); }
+        .em-bubble b { font-weight: 900; line-height: 1; color: #fff; transition: font-size .9s cubic-bezier(0.22,1,0.36,1); }
+        .em-bubble span { margin-top: .4rem; font-size: 1.05rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.7); transition: opacity .4s ease; }
+
+        /* 슬라이드가 켜질 때: 0 크기에서 시작해 제 크기로 자라남 (JS 가 잠깐 .enter 를 붙였다 뗌) */
+        .em-stage.enter .em-bar { height: 0 !important; }
+        .em-stage.enter .em-bubble { transform: scale(0); }
+        .em-stage.enter .em-seg { stroke-dasharray: 0 1000 !important; }
+
+        /* ============================================================
+         *  16. 저울(scale)  (v1.3)
+         * ============================================================ */
+        /* 🎨 DESIGN [scale] 흰색 저점도 선(저울 몸체) + 접시 위 동전(SIDES 색). 보 전체가 기울고, 접시는 반대로 회전해 항상 수평을 유지.
+         *   기울기/동전 낙하는 모두 같은 이징(오버슈트가 있는 탄성 곡선)이라 "툭 떨어지고 출렁이는" 느낌. */
+        .em-stage[data-kind="scale"] { flex: 2; }
+        .slide.chapter-part .em-stage[data-kind="scale"] { flex: none; width: 54rem; }   /* 챕터 제목(2줄)이 붙은 저울은 조금 작게 */
+        .sc-svg { display: block; width: 100%; height: auto; overflow: visible; }
+        .sc-beam, .sc-wrap { transition: transform 1.5s cubic-bezier(0.34,1.35,0.64,1); }
+        .sc-coin { transition: transform .8s cubic-bezier(0.34,1.56,0.64,1), opacity .3s ease; }
+        .sc-gate { transition: opacity .7s ease; }
+        .sc-svg text { text-anchor: middle; }
+        .sc-label { font-size: 20px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; fill: rgba(255,255,255,0.5); }
+        .sc-value { font-size: 44px; font-weight: 900; letter-spacing: -1px; }
+        .sc-coin text { font-size: 9px; font-weight: 900; fill: rgba(255,255,255,0.9); }
+
+        /* ============================================================
+         *  12. 모바일(너비 800px 이하): 스케일링을 끄고 세로 스크롤 + 1열 배치
+         *  (JS도 이 구간에서는 html font-size 를 16px 로 고정)
+         * ============================================================ */
+        @media (max-width: 800px) {
+            body { overflow: auto; }
+            .slide { padding: 2.5rem 1.25rem !important; overflow-y: auto; }
+            .slide-footer { left: 1.25rem; right: 1.25rem; }
+            h1.main-title { font-size: 2.2rem !important; margin-bottom: .9375rem !important; }
+            .unified-grid, .chart-dashboard { grid-template-columns: 1fr !important; gap: 1.25rem !important; height: auto !important; }
+            .unified-grid[data-n="1"] { max-width: none; }
+            p.description { font-size: .9rem !important; }
+            .giant-text, .floating-obj { display: none; }
+            .intro-title { font-size: 4rem; }
+            .content-container { flex-direction: column !important; overflow: visible; padding-bottom: 6rem; }
+            .conclusion-body-wrapper { flex-direction: column; }
+            #slide-toc .content-container { position: relative; top: 0; height: auto; flex-direction: column !important; }
+            .toc-left, .toc-right { height: auto; }
+            .toc-card { padding: 1.25rem; }
+            .kf-grid, .sh-grid, .fd-grid, .src-list, .tl-row { grid-template-columns: 1fr !important; }
+            .rs-body, .fd-quotes { flex-direction: column; }
+            .rs-grid { grid-template-columns: 1fr 1fr !important; }
+            .qn-row { flex-wrap: wrap; gap: 1rem; }
+            .notes-panel { left: 1rem; right: 1rem; }
+            .em-body, .em-donut-row { flex-direction: column; }
+            .em-bars { height: 20rem; } .em-bubbles { height: 22rem; }
+        }
+    
+        /* ============================================================
+         *  5-b. 챕터 레이아웃 (chapter.layout): hero / versus / flow
+         *   - 모두 .unified-grid 를 겸하므로 목차 ↔ 챕터 전환 애니메이션과 그대로 호환됩니다.
+         * ============================================================ */
+        .unified-grid.ch-hero { display: flex; gap: 3rem; align-items: stretch; }
+        .ch-hero-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 1rem; padding: 2rem;
+                        border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden;
+                        background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--side-color) 28%, transparent), rgba(255,255,255,0.02) 70%); }
+        .ch-big { font-size: 11rem; font-weight: 900; line-height: 1; letter-spacing: -4px; color: var(--side-color, #2ed573); text-shadow: 0 0 40px color-mix(in srgb, var(--side-color) 45%, transparent); }
+        .ch-biglabel { font-size: 1.35rem; font-weight: 700; letter-spacing: .3rem; text-transform: uppercase; color: rgba(255,255,255,0.65); }
+        .ch-hero-rows { flex: 1.3; display: flex; flex-direction: column; justify-content: center; gap: 1.2rem; }
+        .ch-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.3rem 1.8rem; border-radius: 1.1rem;
+                  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-left: .35rem solid var(--side-color, #2ed573); }
+        .ch-row h3 { font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: .4rem; }
+        .ch-row p  { font-size: 1.3rem; font-weight: 300; line-height: 1.5; color: rgba(255,255,255,0.7); }
+        .ch-row-num { display: flex; align-items: baseline; gap: .8rem; white-space: nowrap; }
+        .ch-row-num .from { font-size: 2rem; font-weight: 300; color: rgba(255,255,255,0.4); text-decoration: line-through; }
+        .ch-row-num .arr  { font-size: 2rem; color: #2ed573; }
+        .ch-row-num .to   { font-size: 5rem; font-weight: 900; line-height: 1; letter-spacing: -2px; color: var(--side-color, #2ed573); }
+
+        .unified-grid.ch-versus { display: grid; grid-template-columns: 1fr 1fr; gap: 2.2rem; position: relative; }
+        .ch-panel { padding: 1.8rem 2.2rem; border-radius: 1.5rem; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+                    border-top: .35rem solid var(--side-color, #2ed573); display: flex; flex-direction: column; gap: .8rem; }
+        .ch-panel .pill { align-self: flex-start; font-size: .95rem; }
+        .ch-pbig { font-size: 4.6rem; font-weight: 900; line-height: 1.05; letter-spacing: -2px; color: var(--side-color, #2ed573); }
+        .ch-plabel { font-size: 1.15rem; font-weight: 700; letter-spacing: .2rem; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-top: -.4rem; }
+        .ch-panel ul { list-style: none; display: flex; flex-direction: column; gap: .75rem; margin-top: .5rem; }
+        .ch-panel li { position: relative; padding-left: 1.6rem; font-size: 1.4rem; font-weight: 300; line-height: 1.45; color: rgba(255,255,255,0.8); }
+        .ch-panel li::before { content: ""; position: absolute; left: 0; top: .6rem; width: .7rem; height: .7rem; border-radius: 50%; background: var(--side-color, #2ed573); }
+        .ch-vs { position: absolute; left: 50%; top: 5.5rem; transform: translateX(-50%); width: 4.2rem; height: 4.2rem; border-radius: 50%; z-index: 2;
+                 display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 900; letter-spacing: 1px; color: #fff;
+                 background: #050505; border: 2px solid rgba(255,255,255,0.35); }
+        .ch-strip { grid-column: 1 / -1; padding: 1.1rem 2rem; border-radius: 1.1rem; font-size: 1.45rem; font-weight: 700; text-align: center; color: #fff;
+                    background: linear-gradient(90deg, rgba(83,82,237,0.25), rgba(46,213,115,0.25)); border: 1px solid rgba(255,255,255,0.1); }
+
+        .unified-grid.ch-flow { display: flex; align-items: flex-start; justify-content: center; gap: 0; padding-top: 1rem; }
+        .ch-node { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .9rem; padding: 0 1rem; }
+        .ch-circle { width: 11rem; height: 11rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 6rem; font-weight: 900;
+                     color: var(--side-color, #2ed573); border: .25rem solid var(--side-color, #2ed573);
+                     background: radial-gradient(circle, color-mix(in srgb, var(--side-color) 22%, transparent), rgba(255,255,255,0.02) 70%);
+                     box-shadow: 0 0 50px color-mix(in srgb, var(--side-color) 30%, transparent); }
+        .ch-nlabel { font-size: 1.1rem; font-weight: 700; letter-spacing: .25rem; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+        .ch-node h3 { font-size: 1.9rem; font-weight: 900; color: #fff; }
+        .ch-node p { font-size: 1.3rem; font-weight: 300; line-height: 1.55; color: rgba(255,255,255,0.7); max-width: 22rem; }
+        .ch-link { flex: 0 0 5rem; align-self: flex-start; margin-top: 5.2rem; height: .25rem; border-radius: 1rem; position: relative;
+                   background: linear-gradient(90deg, rgba(83,82,237,0.7), rgba(46,213,115,0.7)); }
+        .ch-link::after { content: ""; position: absolute; right: -.1rem; top: 50%; width: .9rem; height: .9rem; border-top: .25rem solid #2ed573; border-right: .25rem solid #2ed573; transform: translateY(-50%) rotate(45deg); }
+
+        /* 목차로 돌아가기 버튼 (표지·목차 제외 모든 슬라이드, M 키) */
+        #toc-fab { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 60; display: none;
+                   padding: .55rem 1.4rem; font-family: inherit; font-size: 1.05rem; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.75);
+                   background: rgba(20,20,24,0.85); border: 1px solid rgba(255,255,255,0.18); border-radius: 2rem; opacity: .55; transition: opacity .25s ease, border-color .25s ease, color .25s ease; }
+        #toc-fab.show { display: block; }
+        .toc-card.done .toc-step::after { content: ' ✓'; color: #2ed573; }
+        .toc-card.done .toc-info p { color: rgba(255,255,255,0.3); }
+        #toc-fab:hover { opacity: 1; color: #fff; border-color: #2ed573; }
+
+    </style>
+</head>
+<body>
+
+<!-- 화면을 따라다니는 커스텀 커서 원 -->
+<div class="custom-cursor"></div>
+
+<!-- TOC ↔ 본문 전환 때 그려지는 화살표 선 -->
+<svg class="trace-svg-overlay">
+    <defs>
+        <marker id="arrow-forward"  markerWidth="10" markerHeight="10" refX="6" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,1 L8,5 L0,9 L2,5 Z" fill="#2ed573"/></marker>
+        <marker id="arrow-backward" markerWidth="10" markerHeight="10" refX="4" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,5 L8,1 L6,5 L8,9 Z" fill="#2ed573"/></marker>
+    </defs>
+    <path class="trace-path" d=""></path>
+</svg>
+
+<!-- 슬라이드는 아래 SLIDES 데이터로 자동 생성되어 여기에 들어갑니다 -->
+<div class="presentation" id="presentation"></div>
+
+<!-- 이미지 확대용 라이트박스 -->
+<button id="toc-fab" type="button" aria-label="Back to contents">☰ CONTENTS</button>
+<div id="image-modal" class="img-modal"><img id="modal-img" src="" alt="Zoomed Image"></div>
+
+<script>
+/* ======================================================================
+ *  ★★★ 여기부터 "★ 수정 영역 끝"까지만 고치면 됩니다 ★★★
+ *  (그 아래 "자동 생성/동작 로직"은 보통 건드릴 필요 없습니다)
+ *
+ *  글 쓰는 규칙
+ *   - 줄바꿈은 \n 으로 씁니다. (예: 'First line\nSecond line')
+ *   - HTML 태그는 쓰지 마세요 (자동으로 안전하게 처리됩니다).
+ *   - 제목 끝의 깜빡이는 점(.)은 자동으로 붙습니다.
+ *   - 슬라이드 번호/페이지(n / N)/목차 번호/이동 규칙은 슬라이드 순서대로 자동 계산됩니다.
+ *   - 이미지 주소를 비워 두면('') 회색 플레이스홀더가 대신 보입니다.
+ * ====================================================================== */
+
+/* ----------------------------------------------------------------------
+ *  [1] 전체 설정
+ * ---------------------------------------------------------------------- */
+const DECK = {
+    tagSeparator: 'I',     // 상단 태그 "TAG I 04" 의 구분 글자
+    designWidth: 1920,     // 디자인 기준 화면 크기. 이 크기에서 1배로 보이고, 화면이 다르면 비율대로 자동 확대/축소
+    designHeight: 1080,
+    minScale: 0.3,         // 자동 배율의 최소/최대 (너무 작거나 커지는 것 방지)
+    maxScale: 2.5,
+    stepDots: true,        // 단계가 있는 슬라이드의 푸터에 진행 점(● ○ ○) 표시
+    maxSlides: null,       // 슬라이드 수 상한(예: 8). 넘으면 콘솔 경고 + 발표자 노트(N) 패널에 경고. null 이면 검사 안 함
+    timer: { minMinutes: 3, maxMinutes: 5 }   // T 키 타이머의 목표 시간대(분): min 이상 = 초록, max 초과 = 깜빡임
+};
+
+/* ----------------------------------------------------------------------
+ *  [2] 비교 대상(진영) 정의: 카드 배지 색, 차트 색, 강조 색이 여기서 정해집니다.
+ *   - 슬라이드에서는 side: 'sideA' 처럼 키로 부릅니다.
+ *   - 비교 대상이 3개 이상이면 키를 더 추가하면 됩니다. (예: sideC: { label: 'SIDE C', color: '#ffa502' })
+ *   - 🎨 DESIGN: 색은 채도 높은 보라(#5352ed) / 초록(#2ed573) 계열이 다크 배경에서 가장 잘 어울림.
+ *   - 비교가 아닌 발표라면 키를 하나만 두고 모든 카드에 같은 side 를 쓰면 됩니다.
+ * ---------------------------------------------------------------------- */
+const SIDES = {
+    sideA: { label: 'SIDE A', color: '#5352ed' },
+    sideB: { label: 'SIDE B', color: '#2ed573' }
+};
+
+/* ----------------------------------------------------------------------
+ *  [3] 슬라이드 목록 (위에서 아래 순서 = 발표 순서). 추가/삭제/순서 변경 자유.
+ *
+ *  공통 필드
+ *    type     : 'cover' | 'charts' | 'intro' | 'toc' | 'chapter' | 'conclusion'
+ *               | 'keyfacts' | 'stakeholders' | 'timeline' | 'questionnaire' | 'respondents' | 'findings' | 'sources' | 'emphasis' | 'scale'
+ *    presenter: (선택) 우상단에 표시할 발표자 이름. 발표자가 바뀌는 슬라이드에서 타이머가 자동 리셋됨
+ *    notes    : (선택) 발표자 노트 — N 키로 열어 봄. 줄바꿈은 \n
+ *    build    : (선택) true 면 항목이 클릭할 때마다 하나씩 나타남. 지원: keyfacts / stakeholders / timeline / questionnaire /
+ *               respondents(요약 카드) / findings / chapter(카드) / conclusion(체크 리스트 → 인용 카드). emphasis 는 steps 로 별도 진행
+ *    buildAnim: (선택) 등장 효과 'rise'(기본, 아래서 위로) | 'fade' | 'zoom' | 'left' | 'right'
+ *    tag      : 상단 왼쪽 작은 글자 (뒤에 슬라이드 번호가 자동으로 붙음)
+ *    icon     : 상단 오른쪽 이모지
+ *    footer   : 하단 왼쪽 글자 (하단 오른쪽 "n / N" 은 자동)
+ *    fade     : true 면 "fade 가 true 인 이웃 슬라이드"와 이동할 때 느린 페이드 사용
+ *    clickNext: false 면 이 슬라이드에서 화면 클릭으로 다음 장으로 안 넘어감 (기본 true)
+ *    key      : (선택) 슬라이드 id 에 쓰일 이름 (예: key:'topic1' → #slide-topic1)
+ *
+ *  ※ 필요 없는 슬라이드(예: charts, intro)는 블록째 지우면 됩니다. 번호는 자동으로 다시 매겨집니다.
+ *  ※ toc 는 chapter 가 1개 이상 있어야 의미가 있고, conclusion 이 없으면 목차의 숨은 점프 버튼이 사라집니다.
+ * ---------------------------------------------------------------------- */
+const SLIDES = [
+
+    /* ══ 표지 (cover) ═══════════════════════════════════════
+     *  🎨 DESIGN: 화면 정중앙에 [초록 작은 부제(대문자, 넓은 자간)] → [12rem 초대형 제목 + 깜빡이는 점] → [옅은 설명] → [깜빡이는 힌트].
+     *            제목 뒤에는 초록+보라 빛 구체(.glow-sphere.cover)가 깔리고, 비눗방울(bubbles)이 화면 가장자리에 떠다님.
+     *  bubbles : 떠다니는 이미지(선택). 비워 두면([]) 비눗방울 없이 빛 구체만 보임.
+     *            src: 이미지 경로(투명 배경 SVG/PNG 권장) / size: px(1920x1080 기준)
+     *            위치: top/left/bottom/right 중 필요한 것을 % 로 / anim: 'arc' | 'float' | 'breathe' | 'spin'
+     * ═══════════════════════════════════════════════════ */
+    { type: 'cover', tag: 'PROJECT', num: 'START', icon: '🌙', fade: true,
+      subtitle: 'Presentation Subtitle',
+      title: 'Presentation\nTitle',
+      desc: 'One or two lines that describe\nwhat this presentation is about.',
+      hint: 'PRESS ARROW KEY OR SPACE TO START',
+      footer: 'Event or Course Name',
+      bubbles: [
+        // { src: 'Pictures/bubble1.svg', size: 500, top: '1%',    left: '9%',    anim: 'arc' },
+        // { src: 'Pictures/bubble2.svg', size: 650, bottom: '10%', right: '30%', anim: 'float' },
+        // { src: 'Pictures/bubble3.svg', size: 500, bottom: '2%',  right: '12%', anim: 'breathe' }
+      ] },
+
+    /* ══ 통계 대시보드 (charts) ═════════════════════════════
+     *  🎨 DESIGN: 위에 제목, 아래에 옅은 유리 카드가 가로로 나열. 카드는 아래에서 올라오며 순차(stagger) 페이드인.
+     *            차트 색은 SIDES 색을 그대로 사용(반투명 채움 + 진한 테두리). 오른쪽 끝의 요약(metrics) 카드는 값 두 개를
+     *            "A | B" 로 나란히 보여주고 더 큰/중요한 쪽만 해당 SIDES 색으로 강조.
+     *  charts : 차트 카드 목록 (1~3개 권장). 카드 수 + metrics 카드 수만큼 열이 자동으로 나뉨
+     *    type   : 'bar' | 'line'
+     *    labels : x축 이름들
+     *    datasets: [{ label, data:[...], color }]  color 는 SIDES 키('sideA') 또는 '#hex'
+     *              bar 에서 막대마다 색을 다르게 하려면 color 대신 colors:['sideA','sideB'] 사용
+     *    legend : true 면 범례 표시
+     *  metrics: 오른쪽 요약 카드(선택, 필요 없으면 통째로 삭제). rows 의 hl 은 강조할 쪽('a' 또는 'b'), side 는 강조 색의 SIDES 키
+     * ═══════════════════════════════════════════════════ */
+    { type: 'charts', tag: 'OVERVIEW', icon: '📊', fade: true,
+      title: 'Chart Slide Title',
+      footer: 'Statistical Overview',
+      charts: [
+        { title: 'Bar Chart Title (Unit)', type: 'bar',
+          labels: ['Item A', 'Item B'],
+          datasets: [{ label: 'Value', data: [10, 20], colors: ['sideA', 'sideB'] }] },
+        { title: 'Line Chart Title', type: 'line', legend: true,
+          labels: ['Metric 1', 'Metric 2', 'Metric 3', 'Metric 4'],
+          datasets: [
+            { label: 'Side A', data: [10, 14, 12, 18], color: 'sideA' },
+            { label: 'Side B', data: [15, 11, 17, 13], color: 'sideB' }
+          ] }
+      ],
+      metrics: { title: 'Key Metrics At a Glance', rows: [
+        { label: 'Metric 1', a: 'A: 00', b: 'B: 00', hl: 'b', side: 'sideB' },
+        { label: 'Metric 2', a: 'A: 00', b: 'B: 00', hl: 'a', side: 'sideA' },
+        { label: 'Metric 3', a: 'A: 00', b: 'B: 00', hl: 'b', side: 'sideB' }
+      ] } },
+
+    /* ══ 인트로 (intro) ═════════════════════════════════════
+     *  🎨 DESIGN: 좌측은 제목+설명, 우측은 10rem 거대 글자 3줄. 가운데 줄(giantFill)만 빛나는 흰 글자(glow-pulse),
+     *            나머지는 투명 + 얇은 테두리(outline). 대립/공통 구도(A · 공통점 · B)를 시각적으로 보여줄 때 효과적.
+     *  giant     : 거대 글자 3줄 (짧은 영단어 권장, 대문자로 표시됨)
+     *  giantFill : 빛나는 줄 번호 (0부터)
+     * ═══════════════════════════════════════════════════ */
+    { type: 'intro', tag: 'CONTEXT', icon: '🌐', fade: true,
+      title: 'Key Message\nin Two Lines',
+      desc: 'A short paragraph that introduces the topic and explains why it matters.',
+      giant: ['WORD A', 'SHARED', 'WORD B'], giantFill: 1,
+      footer: 'Section Name' },
+
+    /* ══ 목차 (toc) ═════════════════════════════════════════
+     *  🎨 DESIGN: 좌(어두운 초록빛 그라데이션: 카테고리 태그 + 제목 + 설명 + 하단 통계 숫자) / 우(챕터 카드 세로 목록).
+     *            ★ 챕터 카드는 아래 chapter 슬라이드에서 자동 수집됨. 카드를 클릭하면 제목이 본문으로 "날아가고"
+     *            초록 곡선 화살표가 그려지며 해당 챕터로 이동 (우클릭 = 역방향). 별도 설정 불필요.
+     *  stats    : 좌측 하단 숫자. 생략하면 [챕터 수, 비교 대상 수] 로 자동
+     *  jumpLabel: 좌측 하단의 숨은 버튼 글자 (마우스를 올리면 나타나 결론으로 이동)
+     * ═══════════════════════════════════════════════════ */
+    { type: 'toc', fade: true, clickNext: false,
+      category: 'Overview',
+      title: 'Table of\nContents',
+      desc: 'A short sentence that introduces the chapters listed on the right.',
+      statLabels: ['Key Chapters', 'Sides'],
+      jumpLabel: 'Go to Conclusion',
+      footer: 'Table of Contents' },
+
+    /* ══ 본문 (chapter) — 이 블록을 통째로 복사해 챕터를 늘리세요 ═══
+     *  🎨 DESIGN: 위에 3rem 제목("01. 제목."), 아래에 비교 카드 1~N장이 가로로 나열.
+     *            카드 = [16:9 이미지 + 좌상단 알약 배지(side 색)] + [제목 + 설명]. 이미지 클릭 시 라이트박스로 확대.
+     *            목차와 FLIP 연결되므로 title 은 줄바꿈 2줄 이내, tocDesc 는 한 줄 설명으로.
+     *  title   : 제목 (목차 카드에도 같은 글이 쓰임, 번호 "01." 은 자동)
+     *  tocDesc : 목차 카드에 보이는 한 줄 설명
+     *  cards   : [{ side, img, title, desc, alt }]  1~4장은 한 줄, 5장 이상은 두 줄. side 는 SIDES 키
+     *            img 를 ''(빈칸)으로 두면 플레이스홀더. 실제 이미지는 URL 또는 상대경로.
+     *  clickNext: false 권장 (카드 클릭이 다음 장으로 넘어가는 것 방지). 이미지 클릭 = 확대는 항상 동작.
+     *  챕터 개수는 제한 없음: 목차는 6개까지 1열, 7개부터 2열로 바뀌고 글자도 자동 조절됨.
+     * ═══════════════════════════════════════════════════ */
+    { type: 'chapter', key: 'chapter1', tag: 'TOPIC 1', icon: '🎭', clickNext: false,
+      title: 'Chapter One\nTitle',
+      tocDesc: 'One-line description shown on the table-of-contents card.',
+      footer: 'Chapter One Footer',
+      cards: [
+        { side: 'sideA', img: '', alt: 'Image description',
+          title: 'Card Title A', desc: 'Two or three sentences that explain this card.' },
+        { side: 'sideB', img: '', alt: 'Image description',
+          title: 'Card Title B', desc: 'Two or three sentences that explain this card.' }
+      ] },
+
+    { type: 'chapter', key: 'chapter2', tag: 'TOPIC 2', icon: '🍲', fade: true, clickNext: false,
+      title: 'Chapter Two\nTitle',
+      tocDesc: 'One-line description shown on the table-of-contents card.',
+      footer: 'Chapter Two Footer',
+      cards: [
+        { side: 'sideA', img: '', alt: 'Image description',
+          title: 'Card Title A', desc: 'Two or three sentences that explain this card.' },
+        { side: 'sideB', img: '', alt: 'Image description',
+          title: 'Card Title B', desc: 'Two or three sentences that explain this card.' }
+      ] },
+
+    { type: 'chapter', key: 'chapter3', tag: 'TOPIC 3', icon: '⚔️', fade: true,
+      title: 'Chapter Three\nTitle',
+      tocDesc: 'One-line description shown on the table-of-contents card.',
+      footer: 'Chapter Three Footer',
+      cards: [
+        { side: 'sideA', img: '', alt: 'Image description',
+          title: 'Card Title A', desc: 'Two or three sentences that explain this card.' },
+        { side: 'sideB', img: '', alt: 'Image description',
+          title: 'Card Title B', desc: 'Two or three sentences that explain this card.' }
+      ] },
+
+    /* ══ 핵심 수치 (keyfacts) ═══════════════════════════════
+     *  🎨 DESIGN: 옅은 유리 카드 1~4개. [라벨] → [이전값(취소선) → 현재값(900, SIDES 색)] → [변화율 알약] → [설명].
+     *  items : [{ label, from, to, change, desc, side }]   from 을 비우면 현재값만 크게 표시
+     *  note  : (선택) 카드 아래 한 줄 요약
+     * ═══════════════════════════════════════════════════ */
+    { type: 'keyfacts', tag: 'KEY FACTS', icon: '🔢', presenter: 'Presenter 1', fade: true, build: true, buildAnim: 'zoom',
+      title: 'Key Facts at a Glance',
+      items: [
+        { label: 'Fact A', from: '0.00', to: '0.00', change: '+00%', desc: 'One line about what changed and where.', side: 'sideA' },
+        { label: 'Fact B', from: '0.00', to: '0.00', change: '+00%', desc: 'One line about what changed and where.', side: 'sideB' },
+        { label: 'Fact C', to: '00%', change: 'NEW', desc: 'A single number with no "before" value.', side: 'sideA' }
+      ],
+      note: 'Optional one-line takeaway placed under the cards.',
+      footer: 'Summary of the News Item',
+      notes: 'Speaker notes for this slide.\nPress N to show or hide this panel.' },
+
+    /* ══ 강조 비교 (emphasis) ═══════════════════════════════
+     *  🎨 DESIGN: 숫자 비교를 "크기"로 보여주는 발표용 슬라이드. 정확도보다 강조가 목적일 때 사용.
+     *            step 0 = 정확한 비율(막대는 25% 눈금선 포함) → 클릭할 때마다 steps[] 순서대로 한 항목만 크게 키우고 나머지는 줄임.
+     *            오른쪽에는 큰 초록 숫자(big)와 설명(caption). 강조 상태에서는 'NOT TO SCALE' 알약이 켜져 축척이 아님을 표시.
+     *  kind    : 'bar'(막대) | 'donut'(도넛, 강조 조각이 두꺼워지며 튀어나옴) | 'bubble'(원, 면적이 값에 비례 → 2~4개 권장)
+     *  items   : [{ label, value, display, side }]   value = 크기 계산용 숫자, display = 화면에 보일 글자(예: '€2.30'), side/color 생략 시 색 자동
+     *  steps   : [{ focus, big, caption }]   focus = items 의 번호(0부터), null 이면 원래 비율로 복귀. 클릭 한 번 = 한 단계
+     *  big / caption : (선택) step 0 에서 보일 큰 숫자 / 설명
+     *  shrink  : (선택) 강조 때 나머지 항목의 크기 배율 (기본 0.3 → 작을수록 극단적)
+     *  center  : (donut 전용) { display, label } 처음 도넛 가운데에 보일 글자.  maxSize / focusSize : (bubble 전용, rem)
+     *  notToScale : false 로 하면 'NOT TO SCALE' 알약을 끔
+     * ═══════════════════════════════════════════════════ */
+    { type: 'emphasis', key: 'emphasisBar', tag: 'IN NUMBERS', icon: '🔍', presenter: 'Presenter 2', fade: true,
+      title: 'The Gap in One Picture',
+      kind: 'bar',
+      items: [
+        { label: 'Item A', value: 8,  display: '8',  side: 'sideA' },
+        { label: 'Item B', value: 10, display: '10', side: 'sideB' },
+        { label: 'Item C', value: 4,  display: '4',  side: 'sideA' }
+      ],
+      caption: 'Step 0 is drawn to scale.\nClick to zoom in on one bar.',
+      steps: [
+        { focus: 1, big: '+00%', caption: 'The bar you want to stress grows and the others shrink.' },
+        { focus: 2, big: '00',   caption: 'Click again to move the spotlight to another bar.' }
+      ],
+      footer: 'Emphasis: Bar', notes: 'Click once per step. Say the number out loud before you click.' },
+
+    { type: 'emphasis', key: 'emphasisDonut', tag: 'IN NUMBERS', icon: '🍩', presenter: 'Presenter 2', fade: true,
+      title: 'Where the Money Comes From',
+      kind: 'donut',
+      items: [
+        { label: 'Part A', value: 50, display: '50%', side: 'sideA' },
+        { label: 'Part B', value: 30, display: '30%', side: 'sideB' },
+        { label: 'Part C', value: 20, display: '20%' }
+      ],
+      center: { display: '100%', label: 'Total' },
+      caption: 'The whole picture first.',
+      steps: [
+        { focus: 1, big: '30%', caption: 'The slice you stress swells and jumps out of the ring.' },
+        { focus: 2, big: '20%', caption: 'Move to the next slice with another click.' }
+      ],
+      footer: 'Emphasis: Donut' },
+
+    { type: 'emphasis', key: 'emphasisBubble', tag: 'IN NUMBERS', icon: '🫧', presenter: 'Presenter 2', fade: true,
+      title: 'Small Number, Big Effect',
+      kind: 'bubble',
+      items: [
+        { label: 'Before', value: 2,    display: '€2.00', side: 'sideA' },
+        { label: 'After',  value: 2.30, display: '€2.30', side: 'sideB' }
+      ],
+      caption: 'Circle area is proportional to the value.',
+      steps: [ { focus: 1, big: '+15%', caption: 'Make one circle huge to make the change feel big.' } ],
+      shrink: .5,
+      footer: 'Emphasis: Bubble' },
+
+    /* ══ 저울 (scale) ══════════════════════════════════════
+     *  🎨 DESIGN: 돈 같은 "가격 변화"를 체감시키는 슬라이드. 처음엔 왼쪽 접시에만 동전이 쌓여 있고 오른쪽 접시는 비어 있음 →
+     *            클릭하면 오른쪽 접시에 동전이 하나씩 툭툭 떨어져 과장될 정도로 쌓이고, 무거워진 쪽으로 저울이 출렁이며 기울어짐.
+     *            접시는 기울어도 수평을 유지. 오른쪽 라벨(숫자)은 동전이 쌓이면 나타남. 접시 위 동전 수는 "느낌"용 과장값.
+     *  left / right : { label, value, display, side, coins }   value = 비율 계산용, display = 화면에 보일 글자(예: '€2.30'),
+     *                 side = SIDES 키(왼쪽 기본 sideA, 오른쪽 기본 sideB), coins = 동전 수(생략 시 자동: 왼쪽 4개, 오른쪽은 비율을 exaggerate 배로 부풀려 계산, 최대 30)
+     *  exaggerate   : (선택) 오른쪽 동전을 얼마나 부풀릴지 (기본 20, 클수록 극단적)
+     *  steps        : (선택) [{ right, left, tilt, big, caption }]  클릭 한 번 = 한 단계. right/left = 그 단계의 동전 수, tilt = 기울기(도, 오른쪽이 내려가면 +).
+     *                 생략하면 "오른쪽에 동전이 쌓이는 1단계"가 자동으로 생김. 여러 단계로 동전을 계속 더 쌓을 수도 있음
+     *  big / caption: (선택) 오른쪽 해설의 큰 초록 숫자 / 설명 (step 0 은 최상위 big / caption)
+     *  tiltMax      : (선택) 최대 기울기(도, 기본 16).  coinSymbol : 동전 글자(기본 '€').  notToScale : false 면 'NOT TO SCALE' 알약 끔
+     * ═══════════════════════════════════════════════════ */
+    { type: 'scale', key: 'scaleMoney', tag: 'IN NUMBERS', icon: '⚖️', presenter: 'Presenter 2', fade: true,
+      title: 'What a Small Rise Feels Like',
+      left:  { label: 'Before', value: 2,    display: '€2.00', side: 'sideA' },
+      right: { label: 'After',  value: 2.30, display: '€2.30', side: 'sideB' },
+      coinSymbol: '€',
+      caption: 'Before: a handful of coins on one side.',
+      steps: [
+        { big: '+15%', caption: 'Click: the coins pour onto the other side and the scale tips.' }
+      ],
+      footer: 'Emphasis: Scale', notes: 'Pause on the empty right pan before you click.' },
+
+    /* ══ 이해관계자 (stakeholders) ══════════════════════════
+     *  🎨 DESIGN: 유리 카드 1~6개. [SIDES 알약] → 이름(900) → 직함 → 이탤릭 인용문. 3개면 한 줄, 4개면 2x2, 5~6개면 3x2.
+     *  people : [{ side, who, role, quote }]   side 는 SIDES 키 → 찬성/반대 같은 입장 구분에 SIDES 의 label 을 바꿔 쓰세요
+     *  ※ 인용문은 출처 문장을 그대로 길게 옮기지 말고 짧게(15단어 이내) 쓰거나 요약할 것
+     * ═══════════════════════════════════════════════════ */
+    { type: 'stakeholders', tag: 'VOICES', icon: '🗣️', presenter: 'Presenter 1', fade: true, build: true,
+      title: 'Who Said What',
+      people: [
+        { side: 'sideB', who: 'Name or Organisation', role: 'Role / Title', quote: 'A short quote or a one-line paraphrase of their position.' },
+        { side: 'sideB', who: 'Name or Organisation', role: 'Role / Title', quote: 'A short quote or a one-line paraphrase of their position.' },
+        { side: 'sideA', who: 'Name or Organisation', role: 'Role / Title', quote: 'A short quote or a one-line paraphrase of their position.' }
+      ],
+      footer: 'Reactions to the News Item' },
+
+    /* ══ 타임라인 (timeline) ════════════════════════════════
+     *  🎨 DESIGN: 옅은 가로선 위에 점이 놓이고 아래로 [날짜(900)] [제목(700)] [설명(300)]. hl:true 는 초록 점+초록 날짜로 강조.
+     *  events : [{ date, title, desc, hl }]  2~6개 권장 (개수만큼 열이 자동 분할)
+     * ═══════════════════════════════════════════════════ */
+    { type: 'timeline', tag: 'BACKGROUND', icon: '🕰️', presenter: 'Presenter 2', fade: true, build: true, buildAnim: 'left',
+      title: 'How We Got Here',
+      events: [
+        { date: '2018', title: 'Event title', desc: 'One or two lines about what happened.' },
+        { date: '2022', title: 'Event title', desc: 'One or two lines about what happened.' },
+        { date: '2025', title: 'Event title', desc: 'One or two lines about what happened.' },
+        { date: '2027', title: 'The news item', desc: 'The point the article is about.', hl: true }
+      ],
+      note: 'Optional one-line context under the timeline.',
+      footer: 'Background Research' },
+
+    /* ══ 설문지 (questionnaire) ═════════════════════════════
+     *  🎨 DESIGN: 목차 카드 문법을 가져온 행 리스트. [큰 번호 Q1] [질문(700)] [초록 라벨 + 목적(300)] [응답 유형 알약].
+     *  desc         : (선택) 질문 위의 한 줄 소개 (대상, 방식 등)
+     *  purposeLabel : (선택) 초록 라벨 글자 (기본 'PURPOSE')
+     *  questions    : [{ q, purpose, type }]   3~5문항 권장
+     * ═══════════════════════════════════════════════════ */
+    { type: 'questionnaire', tag: 'METHOD', icon: '📝', presenter: 'Presenter 3', fade: true, build: true,
+      title: 'Our Questionnaire',
+      desc: 'Face-to-face interviews, 8 residents, about 3 minutes each.',
+      questions: [
+        { q: 'Question one goes here?', purpose: 'What this question tells us.', type: 'Yes / No' },
+        { q: 'Question two goes here?', purpose: 'What this question tells us.', type: 'Scale 1-5' },
+        { q: 'Question three goes here?', purpose: 'What this question tells us.', type: 'Open answer' }
+      ],
+      footer: 'Questionnaire Design' },
+
+    /* ══ 응답자 (respondents) ═══════════════════════════════
+     *  🎨 DESIGN: 왼쪽 프로필 카드 그리드(4장 이하 2열, 6장 이하 3열, 그 이상 4열) + 오른쪽 요약 카드(가로 막대, 슬라이드가 켜질 때 채워짐).
+     *  people  : [{ id, main, sub, by }]   이름은 쓰지 말고 R1, R2... 처럼 익명 ID 권장. by = 인터뷰한 팀원(선택)
+     *  summary : { title, groups: [{ label, rows: [{ label, n }], side }] }   막대 폭은 그룹 내 n 의 비율로 자동 계산
+     * ═══════════════════════════════════════════════════ */
+    { type: 'respondents', tag: 'METHOD', icon: '👥', presenter: 'Presenter 3', fade: true, build: true,
+      title: 'Who We Interviewed',
+      people: [
+        { id: 'R1', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 1' },
+        { id: 'R2', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 1' },
+        { id: 'R3', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 2' },
+        { id: 'R4', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 2' },
+        { id: 'R5', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 3' },
+        { id: 'R6', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 3' },
+        { id: 'R7', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 4' },
+        { id: 'R8', main: 'Age group, gender', sub: 'Occupation / background', by: 'By: Member 4' }
+      ],
+      summary: { title: 'Profile Mix', groups: [
+        { label: 'Age', rows: [{ label: '18-25', n: 3 }, { label: '26-49', n: 3 }, { label: '50+', n: 2 }] },
+        { label: 'Gender', rows: [{ label: 'Female', n: 4 }, { label: 'Male', n: 4 }] }
+      ] },
+      footer: 'Interviewees (anonymous)' },
+
+    /* ══ 조사 결과 (findings) ═══════════════════════════════
+     *  🎨 DESIGN: chart-card 1~3장(아래에서 올라오며 순차 등장) + 카드마다 초록 라벨 요약 한 줄 + 하단 인용 띠.
+     *  results : [{ no, q, type, labels, data, colors, takeaway, horizontal, legend }]
+     *            type : 'bar' | 'line' | 'doughnut'   horizontal:true 면 가로 막대   colors 는 SIDES 키 또는 #hex 배열
+     *            doughnut 은 colors 를 생략하면 [보라, 초록, 흰색, 회색...] 순환
+     *  quotes  : (선택) [{ text, who }] 대표 답변 1~3개
+     *  takeawayLabel : (선택) 요약 라벨 글자 (기본 'TAKEAWAY')
+     * ═══════════════════════════════════════════════════ */
+    { type: 'findings', tag: 'FINDINGS', icon: '📈', presenter: 'Presenter 4', fade: true, build: true, buildAnim: 'fade',
+      title: 'What People Told Us',
+      results: [
+        { no: 1, q: 'Question one text', type: 'bar', labels: ['Yes', 'No', 'Not sure'], data: [5, 2, 1],
+          colors: ['sideB', 'sideA', '#8a8a99'], takeaway: 'One sentence that states what the chart shows.' },
+        { no: 2, q: 'Question two text', type: 'doughnut', labels: ['Option A', 'Option B', 'Option C'], data: [4, 3, 1],
+          takeaway: 'One sentence that states what the chart shows.' }
+      ],
+      quotes: [
+        { text: 'A short, memorable answer from an interviewee.', who: 'R3 - 24, student' },
+        { text: 'Another short answer that adds a different view.', who: 'R6 - 58, retired' }
+      ],
+      footer: 'Interview Results', notes: 'Say which question this is and what surprised the team.' },
+
+    /* ══ 결론 (conclusion) ══════════════════════════════════
+     *  🎨 DESIGN: 풀스크린 배경 이미지(좌우 반전, 불투명도 .35, 1.5초 페이드인) 위에
+     *            좌측 = 체크(✓) 리스트 + 설명 / 우측 = 초록 따옴표로 장식된 인용 카드.
+     *  bullets : [{ head, text }] — 굵은 머리말 + 설명. 챕터 수와 맞추면 좋음 (3개 권장)
+     *  quote   : 우측 인용 카드 문구 (줄바꿈 \n 으로 3~4줄 권장)
+     *  bg      : 배경 이미지 URL (어둡고 분위기 있는 사진 권장). ''(빈칸)이면 배경 없이 검은 화면.
+     * ═══════════════════════════════════════════════════ */
+    { type: 'conclusion', tag: 'CONCLUSION', icon: '✨',
+      title: 'Conclusion\nTitle',
+      bullets: [
+        { head: 'Point One',   text: 'One-line summary of the first takeaway' },
+        { head: 'Point Two',   text: 'One-line summary of the second takeaway' },
+        { head: 'Point Three', text: 'One-line summary of the third takeaway' }
+      ],
+      desc: 'A closing paragraph that ties all the chapters together and states the final message.',
+      quote: 'A memorable closing line\nbroken into\nthree short lines.',
+      bg: '',   // 예: 'https://.../photo.jpg'  (좌우 반전 + 불투명도 .35 로 자동 적용)
+      footer: 'Closing Footer' },
+
+    /* ══ 출처 (sources) ═════════════════════════════════════
+     *  🎨 DESIGN: 번호(초록) + 제목(700) + 메타(300, 흐리게)의 행 목록. 6개 초과 시 자동 2열.
+     *  items    : [{ title, meta, url }]   meta = 언론사/날짜 등, url 은 글자로만 표시(발표 중 클릭 불가)
+     *  footnote : (선택) 하단 각주 — 수치 출처 차이, 확인 필요 사항 등
+     * ═══════════════════════════════════════════════════ */
+    { type: 'sources', tag: 'REFERENCES', icon: '📚', presenter: 'Presenter 4',
+      title: 'Sources',
+      items: [
+        { title: 'Article or report title', meta: 'Outlet, date', url: 'https://example.com' },
+        { title: 'Article or report title', meta: 'Outlet, date', url: 'https://example.com' },
+        { title: 'Article or report title', meta: 'Outlet, date', url: 'https://example.com' }
+      ],
+      footnote: 'Optional note about differences between sources or figures that need checking.',
+      footer: 'References' }
+];
+
+/* ======================================================================
+ *  ★ 수정 영역 끝 — 아래는 자동 생성/동작 로직 ★
+ * ====================================================================== */
+
+/* ---------- 공통 유틸 ---------- */
+// 이미지 칸을 비웠을 때 보이는 16:9 회색 플레이스홀더 (외부 파일 없이 SVG 데이터 주소로 내장)
+const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1a1f"/><stop offset="1" stop-color="#0d0d10"/></linearGradient></defs>' +
+    '<rect width="1280" height="720" fill="url(#g)"/>' +
+    '<g fill="none" stroke="#ffffff" stroke-opacity=".25" stroke-width="6"><rect x="500" y="260" width="280" height="200" rx="18"/><circle cx="580" cy="330" r="22"/><path d="M510 450 l90 -80 l60 55 l50 -40 l60 65"/></g>' +
+    '<text x="640" y="520" fill="#ffffff" fill-opacity=".35" font-family="sans-serif" font-size="34" text-anchor="middle" letter-spacing="6">IMAGE 16:9</text></svg>');
+
+// HTML 이스케이프 (제목/설명에 특수문자가 있어도 안전)
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 이스케이프 + 줄바꿈(\n) → <br>
+const txt = s => esc(s).replace(/\n/g, '<br>');
+// 숫자를 두 자리 문자열로 (3 → '03')
+const pad2 = n => String(n).padStart(2, '0');
+// 'sideA' 같은 키 또는 '#hex' 를 실제 색으로
+const colorOf = c => (SIDES[c] && SIDES[c].color) || c;
+// '#rrggbb' + 투명도 → 'rgba(...)' (차트 채우기용)
+function withAlpha(hex, a) {
+    const h = hex.replace('#', '');
+    const n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h, 16);
+    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${a})`;
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const isMobile = () => window.matchMedia('(max-width: 800px)').matches;
+
+/* ======================================================================
+ *  1) 화면 크기 → 전체 배율 (모든 rem 크기가 이 값에 맞춰 커지고 작아짐)
+ *     예) 1280x720 대형 스크린 → 0.667배 (1080p 와 똑같은 모양으로 축소)
+ *         1024x768 (4:3)       → 너비 기준 0.533배 (세로는 여유 공간)
+ * ====================================================================== */
+let uiScale = 1;
+function applyScale() {
+    uiScale = isMobile() ? 1 :
+        clamp(Math.min(window.innerWidth / DECK.designWidth, window.innerHeight / DECK.designHeight), DECK.minScale, DECK.maxScale);
+    document.documentElement.style.fontSize = (16 * uiScale) + 'px';
+}
+applyScale();   // 첫 화면이 깜빡이지 않도록 가장 먼저 실행
+
+/* ======================================================================
+ *  2) 데이터 → 슬라이드 DOM 생성
+ * ====================================================================== */
+const presentationEl = document.getElementById('presentation');
+const chartDefs = {};   // 슬라이드 번호 → 그 슬라이드의 차트 정의 목록 (진입할 때마다 다시 그림)
+
+// 🎨 새로운 슬라이드 type 을 만들 때: 아래 BUILDERS 에 함수를 추가하고, 파일 맨 위 "DESIGN LANGUAGE" 의 색/타이포/카드 규칙을 따를 것.
+//    (공통 헤더/푸터는 아래 "슬라이드 전체 조립" 단계에서 자동으로 붙으므로 본문 영역만 만들면 됨)
+// 슬라이드 종류별 "본문" HTML 만드는 함수들. 인자: (슬라이드 데이터, 슬라이드 번호)
+// 저울(scale): 단계별 동전 수/기울기 계획. 상태 0 = 왼쪽만 쌓임, 이후 steps[k-1] 의 {left, right, tilt} (생략 시 자동)
+function scalePlan(s) {
+    const ratio = (+s.right.value || 1) / (+s.left.value || 1), ex = s.exaggerate != null ? s.exaggerate : 20;   // 클수록 오른쪽 동전이 더 많아짐
+    const lc = s.left.coins != null ? s.left.coins : 4;
+    const rc = s.right.coins != null ? s.right.coins
+        : (ratio >= 1 ? clamp(Math.round(lc * (1 + (ratio - 1) * ex)), lc + 2, 30) : clamp(Math.round(lc * (1 + (ratio - 1) * ex)), 1, Math.max(1, lc - 1)));
+    const steps = (s.steps && s.steps.length ? s.steps : [{}]);
+    const states = [{ L: lc, R: 0 }, ...steps.map(st => ({ L: st.left != null ? st.left : lc, R: st.right != null ? st.right : rc, tilt: st.tilt }))];
+    return { states, maxL: Math.max(...states.map(x => x.L)), maxR: Math.max(...states.map(x => x.R)) };
+}
+
+// 단계(build) 공개용 속성: 슬라이드에 build:true 가 있으면 k(>0) 번째 항목은 k 번째 클릭에서 나타남 (k=0 은 처음부터 보임)
+const stp = (s, k) => (s.build && k > 0) ? ` data-step="${k}"` : '';
+// 강조 비교(emphasis) 항목 색: side/color 지정이 없으면 보라 → 초록 → 흰색 → 회색 순환
+const emPalette = s => s.items.map((it, k) => colorOf(it.side || it.color || ['sideA', 'sideB', '#ffffff', '#8a8a99', '#4a4a55'][k % 5]));
+
+const BUILDERS = {
+
+    cover: s => `
+        ${(s.bubbles || []).map(b => `<img src="${esc(b.src)}" class="floating-obj anim-${esc(b.anim || 'float')}" alt=""
+            style="width:${b.size / 16}rem; height:${b.size / 16}rem; ${['top', 'left', 'bottom', 'right'].filter(k => b[k]).map(k => `${k}:${esc(b[k])}`).join(';')}">`).join('')}
+        <div class="intro-container">
+            <div class="glow-sphere cover"></div>
+            <div class="intro-subtitle">${txt(s.subtitle)}</div>
+            <h1 class="intro-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <p class="intro-desc">${txt(s.desc)}</p>
+            <div class="intro-hint">${txt(s.hint)}</div>
+        </div>`,
+
+    charts: (s, i) => {
+        const cards = s.charts.map((c, k) => `
+            <div class="chart-card"><h4>${txt(c.title)}</h4>
+                <div class="canvas-container"><canvas id="chart-${i}-${k}"></canvas></div></div>`).join('');
+        const m = s.metrics ? `
+            <div class="chart-card info-summary-card"><h4>${txt(s.metrics.title)}</h4>
+                ${s.metrics.rows.map(r => {
+                    const hl = side => `<span class="${r.hl === side ? 'hl' : ''}" ${r.hl === side ? `style="--side-color:${colorOf(r.side)}"` : ''}>${esc(r[side])}</span>`;
+                    return `<div class="metric-row"><span class="m-title">${esc(r.label)}</span>
+                        <div class="m-values">${hl('a')}<span class="bar">|</span>${hl('b')}</div></div>`;
+                }).join('')}
+            </div>` : '';
+        const cols = s.charts.length + (s.metrics ? 1 : 0);
+        return `<div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="chart-dashboard" style="--cols:${cols}">${cards}${m}</div></div>`;
+    },
+
+    intro: s => `
+        <div class="content-container">
+            <div class="left-col">
+                <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+                <p class="description">${txt(s.desc)}</p>
+            </div>
+            <div class="right-col"><div class="giant-text-wrapper">
+                ${s.giant.map((g, k) => `<div class="giant-text ${k === s.giantFill ? 'fill' : 'outline'}">${esc(g)}</div>`).join('')}
+            </div></div>
+        </div>`,
+
+    toc: s => {
+        // 목차 카드는 chapter 슬라이드들에서 자동 수집 (data-target = 그 슬라이드의 번호)
+        const chapters = SLIDES.map((c, idx) => ({ c, idx })).filter(o => o.c.type === 'chapter');
+        const jumpIdx = SLIDES.map(c => c.type).lastIndexOf('conclusion');
+        const stats = s.stats || [pad2(chapters.length), pad2(Object.keys(SIDES).length)];
+        const labels = s.statLabels || ['Key Chapters', 'Sides'];
+        // 챕터 개수에 맞춘 목차 밀도: 6개까지는 1열, 7개부터는 2열. 칸 수(rows)가 많을수록 글자/여백을 줄임.
+        const nCh = chapters.length;
+        const tocCols = nCh <= 6 ? 1 : 2;
+        const tocRows = Math.ceil(nCh / tocCols);
+        const tocK = clamp(3.2 / Math.max(tocRows, 1), 0.45, 1) * (tocCols === 2 ? 0.8 : 1);
+        return `
+        <div class="content-container">
+            <div class="toc-left">
+                <div class="toc-left-content">
+                    <div class="category-tag">${esc(s.category)}</div>
+                    <h1 class="main-title" id="toc-main-title">${txt(s.title)}<span class="dot">.</span></h1>
+                    <p class="description" id="toc-description" style="max-width:90%">${txt(s.desc)}</p>
+                </div>
+                <div class="toc-footer-stats">
+                    ${stats.map((n, k) => `<div class="stat-item"><span class="num">${esc(n)}</span><span class="lbl"> ${esc(labels[k] || '')}</span></div>`).join('')}
+                </div>
+                ${jumpIdx >= 0 ? `<button id="jump-to-end" class="hidden-jump-btn" data-target="${jumpIdx}">${esc(s.jumpLabel || 'Go to Conclusion')}</button>` : ''}
+            </div>
+            <div class="toc-right" id="toc-right-menu" style="--cols:${tocCols}; --k:${tocK.toFixed(3)}">
+                ${chapters.map(({ c, idx }, k) => `
+                <div class="toc-card" data-target="${idx}">
+                    <div class="toc-num">${pad2(k + 1)}</div>
+                    <div class="toc-info">
+                        <div class="toc-step">CHAPTER ${pad2(k + 1)} — ${esc(c.tag)}</div>
+                        <span class="target-anchor">${pad2(k + 1)}. ${txt(c.title)}</span>
+                        <p>${txt(c.tocDesc)}</p>
+                    </div>
+                    <div class="toc-arrow">→</div>
+                </div>`).join('')}
+            </div>
+        </div>`;
+    },
+
+    chapter: (s, i) => {
+        // 챕터 번호: 챕터 슬라이드 중 몇 번째인지 (제목 앞 "01." 자동)
+        const k = SLIDES.slice(0, i).filter(c => c.type === 'chapter').length + 1;
+        const head = `<h1 class="main-title">${pad2(k)}. ${txt(s.title)}<span class="dot">.</span></h1>`;
+        const sc = c => `--side-color:${(SIDES[c] && SIDES[c].color) || '#2ed573'}`;
+        const layout = s.layout || 'cards';
+        if (layout === 'hero') {
+            // 왼쪽: 거대 숫자(hero) / 오른쪽: 행 목록(rows) — rows 는 클릭할 때마다 하나씩 나타남. 행에 from/to 를 주면 to 가 크게 강조됨
+            const h = s.hero || {};
+            return `<div class="content-container column">${head}
+                <div class="unified-grid ch-hero" data-n="${(s.rows || []).length}">
+                    <div class="ch-hero-main" style="${sc(h.side || 'sideB')}"><div class="ch-big">${esc(h.big)}</div><div class="ch-biglabel">${txt(h.label || '')}</div></div>
+                    <div class="ch-hero-rows">${(s.rows || []).map((r, j) => `<div class="ch-row"${stp(s, j + 1)} style="${sc(r.side)}">
+                        <div><h3>${txt(r.title)}</h3><p>${txt(r.desc || '')}</p></div>
+                        ${r.to ? `<div class="ch-row-num">${r.from ? `<span class="from">${esc(r.from)}</span><span class="arr">→</span>` : ''}<span class="to">${esc(r.to)}</span></div>` : ''}
+                    </div>`).join('')}</div>
+                </div></div>`;
+        }
+        if (layout === 'versus') {
+            // 두 패널(left / right) + 선택적 하단 띠(strip). 순서: left → right → strip
+            const panel = (p, st) => `<div class="ch-panel"${stp(s, st)} style="${sc(p.side)}">
+                <span class="pill">${esc((SIDES[p.side] || {}).label || p.tag || '')}</span>
+                <div class="ch-pbig">${txt(p.big || '')}</div>${p.bigLabel ? `<div class="ch-plabel">${txt(p.bigLabel)}</div>` : ''}
+                <ul>${(p.points || []).map(t => `<li>${txt(t)}</li>`).join('')}</ul></div>`;
+            return `<div class="content-container column">${head}
+                <div class="unified-grid ch-versus" data-n="2">
+                    ${panel(s.left || {}, 0)}${panel(s.right || {}, 1)}
+                    <div class="ch-vs">VS</div>
+                    ${s.strip ? `<div class="ch-strip"${stp(s, 2)}>${txt(s.strip)}</div>` : ''}
+                </div></div>`;
+        }
+        if (layout === 'flow') {
+            // 가로 흐름: 숫자 원 + 제목 + 설명, 사이에 화살표. 항목은 클릭할 때마다 하나씩 나타남
+            const nodes = s.flow || [];
+            return `<div class="content-container column">${head}
+                <div class="unified-grid ch-flow" data-n="${nodes.length}">
+                    ${nodes.map((n, j) => `${j ? `<div class="ch-link"${stp(s, j)}></div>` : ''}<div class="ch-node"${stp(s, j)} style="${sc(n.side)}">
+                        <div class="ch-circle">${esc(n.big)}</div><div class="ch-nlabel">${esc(n.label || '')}</div><h3>${txt(n.title)}</h3><p>${txt(n.desc || '')}</p></div>`).join('')}
+                </div></div>`;
+        }
+        const n = s.cards.length;
+        const cols = n <= 4 ? n : Math.ceil(n / 2);           // 1~4장: 한 줄 / 5장 이상: 두 줄
+        return `<div class="content-container column">${head}
+            <div class="unified-grid" data-n="${n}" style="--cols:${cols}">
+                ${s.cards.map((c, k) => {
+                    const side = SIDES[c.side] || { label: c.side || '', color: '#888' };
+                    return `<div class="unified-card"${stp(s, k)} style="--side-color:${side.color}">
+                        <div class="card-image-wrapper">
+                            <img src="${esc(c.img || PLACEHOLDER_IMG)}" alt="${esc(c.alt || c.title)}" class="card-img">
+                            <div class="card-badge">${esc(side.label)}</div>
+                        </div>
+                        <div class="card-info"><h3>${txt(c.title)}</h3><p>${txt(c.desc)}</p></div>
+                    </div>`;
+                }).join('')}
+            </div></div>`;
+    },
+
+
+    keyfacts: s => `
+        <div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="kf-grid" style="--cols:${clamp(s.items.length, 1, 4)}">
+                ${s.items.map((it, k) => `<div class="kf-card"${stp(s, k)} style="--side-color:${colorOf(it.side || 'sideA')}">
+                    <div class="kf-label">${esc(it.label)}</div>
+                    <div class="kf-flow">${it.from ? `<span class="kf-from">${esc(it.from)}</span><span class="kf-arrow">→</span>` : ''}<span class="kf-to">${esc(it.to)}</span></div>
+                    ${it.change ? `<div class="kf-change">${esc(it.change)}</div>` : ''}
+                    ${it.desc ? `<div class="kf-desc">${txt(it.desc)}</div>` : ''}
+                </div>`).join('')}
+            </div>
+            ${s.note ? `<p class="slide-note">${txt(s.note)}</p>` : ''}
+        </div>`,
+
+    stakeholders: s => {
+        const n = s.people.length, cols = n <= 3 ? n : (n === 4 ? 2 : 3);
+        return `<div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="sh-grid" style="--cols:${cols}">
+                ${s.people.map((p, k) => {
+                    const side = SIDES[p.side] || { label: p.side || '', color: '#888' };
+                    return `<div class="sh-card"${stp(s, k)} style="--side-color:${side.color}">
+                        <div><span class="pill">${esc(side.label)}</span></div>
+                        <div class="sh-who">${txt(p.who)}</div>
+                        <div class="sh-role">${esc(p.role)}</div>
+                        <p class="sh-quote">${txt(p.quote)}</p>
+                    </div>`;
+                }).join('')}
+            </div></div>`;
+    },
+
+    timeline: s => `
+        <div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="tl-wrap"><div class="tl-line"></div>
+                <div class="tl-row" style="--cols:${s.events.length}">
+                    ${s.events.map((e, k) => `<div class="tl-item${e.hl ? ' hl' : ''}"${stp(s, k)}>
+                        <div class="tl-dot"></div>
+                        <div class="tl-date">${esc(e.date)}</div>
+                        <div class="tl-title">${txt(e.title)}</div>
+                        <div class="tl-desc">${txt(e.desc)}</div>
+                    </div>`).join('')}
+                </div>
+            </div>
+            ${s.note ? `<p class="slide-note" style="margin-top:2.5rem">${txt(s.note)}</p>` : ''}
+        </div>`,
+
+    questionnaire: s => `
+        <div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            ${s.desc ? `<p class="description" style="font-size:1.2rem; margin-bottom:1.5rem">${txt(s.desc)}</p>` : ''}
+            <div class="qn-list">
+                ${s.questions.map((q, k) => `<div class="qn-row"${stp(s, k)}>
+                    <div class="qn-num">Q${k + 1}</div>
+                    <div class="qn-body">
+                        <div class="qn-q">${txt(q.q)}</div>
+                        ${q.purpose ? `<div class="qn-purpose"><b>${esc(s.purposeLabel || 'PURPOSE')}</b>${txt(q.purpose)}</div>` : ''}
+                    </div>
+                    ${q.type ? `<div class="qn-type">${esc(q.type)}</div>` : ''}
+                </div>`).join('')}
+            </div></div>`,
+
+    respondents: s => {
+        const n = s.people.length, cols = n <= 4 ? 2 : (n <= 6 ? 3 : 4);
+        const groups = (s.summary && s.summary.groups) || [];
+        const summary = groups.map((g, gi) => {
+            const tot = g.rows.reduce((a, r) => a + (+r.n || 0), 0) || 1;
+            return `<div class="metric-row" style="--side-color:${colorOf(g.side || (gi % 2 ? 'sideB' : 'sideA'))}">
+                <span class="m-title">${esc(g.label)}</span>
+                ${g.rows.map(r => `<div class="bar-row">
+                    <div class="bar-label"><span>${esc(r.label)}</span><span>${esc(r.n)}</span></div>
+                    <div class="bar-track"><div class="bar-fill" style="--w:${Math.round((+r.n || 0) / tot * 100)}%"></div></div>
+                </div>`).join('')}
+            </div>`;
+        }).join('');
+        return `<div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="rs-body">
+                <div class="rs-grid" style="--cols:${cols}">
+                    ${s.people.map(p => `<div class="rs-card">
+                        <div class="rs-id">${esc(p.id)}</div>
+                        <div class="rs-main">${txt(p.main)}</div>
+                        <div class="rs-sub">${txt(p.sub)}</div>
+                        ${p.by ? `<div class="rs-by">${esc(p.by)}</div>` : ''}
+                    </div>`).join('')}
+                </div>
+                ${groups.length ? `<div class="chart-card info-summary-card rs-summary"${s.build ? ' data-step="1"' : ''}><h4>${txt((s.summary && s.summary.title) || 'Profile')}</h4>${summary}</div>` : ''}
+            </div></div>`;
+    },
+
+    findings: (s, i) => `
+        <div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="fd-grid" style="--cols:${clamp(s.results.length, 1, 3)}">
+                ${s.results.map((r, k) => `<div class="chart-card fd-card"${stp(s, k)}>
+                    <h4>Q${r.no || k + 1}. ${txt(r.q)}</h4>
+                    <div class="canvas-container"><canvas id="chart-${i}-${k}"></canvas></div>
+                    ${r.takeaway ? `<div class="fd-take"><b>${esc(s.takeawayLabel || 'TAKEAWAY')}</b>${txt(r.takeaway)}</div>` : ''}
+                </div>`).join('')}
+            </div>
+            ${(s.quotes && s.quotes.length) ? `<div class="fd-quotes"${stp(s, s.results.length)}>${s.quotes.map(q => `<div class="fd-quote">${txt(q.text)}<span>${esc(q.who)}</span></div>`).join('')}</div>` : ''}
+        </div>`,
+
+    sources: s => `
+        <div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="src-list" style="--cols:${s.items.length > 6 ? 2 : 1}">
+                ${s.items.map((it, k) => `<div class="src-item">
+                    <div class="src-idx">${pad2(k + 1)}</div>
+                    <div><div class="src-title">${txt(it.title)}</div>
+                    <div class="src-meta">${esc(it.meta || '')}${it.url ? ` · ${esc(it.url)}` : ''}</div></div>
+                </div>`).join('')}
+            </div>
+            ${s.footnote ? `<p class="slide-note">${txt(s.footnote)}</p>` : ''}
+        </div>`,
+
+
+    emphasis: (s, i) => {
+        const cols = emPalette(s), kind = s.kind || 'bar';
+        const val = it => esc(it.display != null ? it.display : it.value);
+        let stage;
+        if (kind === 'donut') {
+            stage = `<div class="em-donut-row">
+                <div class="em-donut-wrap">
+                    <svg viewBox="0 0 240 240">
+                        <circle cx="120" cy="120" r="70" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="26"/>
+                        <g transform="rotate(-90 120 120)">${s.items.map((it, k) => `<circle class="em-seg" cx="120" cy="120" r="70" style="stroke:${cols[k]}"/>`).join('')}</g>
+                    </svg>
+                    <div class="em-center"><b></b><span></span></div>
+                </div>
+                <div class="em-legend">${s.items.map((it, k) => `<div class="em-lg"><i style="background:${cols[k]}"></i><span>${esc(it.label)}</span><b>${val(it)}</b></div>`).join('')}</div>
+            </div>`;
+        } else if (kind === 'bubble') {
+            stage = `<div class="em-bubbles">${s.items.map((it, k) => `<div class="em-bubble" style="--c:${cols[k]}; --ca:${withAlpha(cols[k], .55)}"><b>${val(it)}</b><span>${esc(it.label)}</span></div>`).join('')}</div>`;
+        } else {
+            stage = `<div class="em-bars">${s.items.map((it, k) => `<div class="em-col" style="--c:${cols[k]}; --ca:${withAlpha(cols[k], .65)}">
+                <div class="em-barwrap"><div class="em-bar"><div class="em-val">${val(it)}</div></div></div>
+                <div class="em-lbl">${esc(it.label)}</div></div>`).join('')}</div>`;
+        }
+        return `<div class="content-container column">
+            <h1 class="main-title">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="em-body">
+                <div class="em-stage" data-kind="${esc(kind)}">${stage}</div>
+                <div class="em-side"><div class="em-big"></div><div class="em-text"></div>
+                    ${s.notToScale === false ? '' : `<div class="em-tag">${esc(s.notToScaleLabel || 'NOT TO SCALE')}</div>`}
+                </div>
+            </div></div>`;
+    },
+
+
+    scale: (s, i) => {
+        const plan = scalePlan(s), sym = s.coinSymbol != null ? s.coinSymbol : '€';
+        const lcol = colorOf(s.left.side || 'sideA'), rcol = colorOf(s.right.side || 'sideB');
+        const shade = (hex, f) => { const n = parseInt(hex.replace('#', ''), 16); return `rgb(${(n >> 16 & 255) * f | 0},${(n >> 8 & 255) * f | 0},${(n & 255) * f | 0})`; };
+        // k 번째 동전의 위치: 아래층부터 쌓고, 위로 갈수록 폭이 줄어드는 더미(5,5,4,4,3,3,2,2,1,1...)
+        const pos = k => {
+            let j = 0, rest = k;
+            while (rest >= Math.max(1, 5 - Math.floor(j / 2))) { rest -= Math.max(1, 5 - Math.floor(j / 2)); j++; }
+            const cap = Math.max(1, 5 - Math.floor(j / 2));
+            return { x: (rest - (cap - 1) / 2) * 40, y: 105 - j * 8 };
+        };
+        const coins = (side, n, col) => Array.from({ length: n }, (_, k) => {
+            const p = pos(k);
+            return `<g class="sc-coin" data-side="${side}" data-k="${k}" data-x="${p.x}" data-y="${p.y}" style="opacity:0; transform:translate(${p.x}px, ${p.y - 260}px)">
+                <ellipse cx="0" cy="8" rx="18" ry="6" fill="${shade(col, .55)}"/>
+                <rect x="-18" y="0" width="36" height="8" fill="${shade(col, .55)}"/>
+                <ellipse cx="0" cy="0" rx="18" ry="6" fill="${col}" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+                <text y="3.2">${esc(sym)}</text></g>`;
+        }).join('');
+        const pan = (side, cx, col, cfg, n) => `
+            <g class="sc-wrap" style="transform-origin:${cx}px 110px">
+                <g transform="translate(${cx} 110)">
+                    <line x1="0" y1="0" x2="-95" y2="115" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+                    <line x1="0" y1="0" x2="95" y2="115" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+                    ${coins(side, n, col)}
+                    <path d="M -105 115 Q 0 165 105 115 Z" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+                    <text class="sc-label${side === 'R' ? ' sc-gate' : ''}" y="190" ${side === 'R' ? 'style="opacity:0"' : ''}>${esc(cfg.label)}</text>
+                    <text class="sc-value${side === 'R' ? ' sc-gate' : ''}" y="238" style="fill:${col}${side === 'R' ? '; opacity:0' : ''}">${esc(cfg.display != null ? cfg.display : cfg.value)}</text>
+                </g>
+            </g>`;
+        const ci = s.chapterOf ? SLIDES.findIndex(c => c.type === 'chapter' && c.key === s.chapterOf) : -1;
+        const head = ci >= 0 ? `${pad2(SLIDES.slice(0, ci).filter(c => c.type === 'chapter').length + 1)}. ${txt(SLIDES[ci].title)}` : txt(s.title);
+        return `<div class="content-container column">
+            <h1 class="main-title">${head}<span class="dot">.</span></h1>
+            <div class="em-body${ci >= 0 ? ' ch-fade' : ''}">
+                <div class="em-stage" data-kind="scale">
+                    <svg class="sc-svg" viewBox="0 0 800 500">
+                        <line x1="400" y1="110" x2="400" y2="462" stroke="rgba(255,255,255,0.22)" stroke-width="10" stroke-linecap="round"/>
+                        <rect x="320" y="462" width="160" height="14" rx="7" fill="rgba(255,255,255,0.12)"/>
+                        <g class="sc-beam" style="transform-origin:400px 110px">
+                            <line x1="130" y1="110" x2="670" y2="110" stroke="rgba(255,255,255,0.75)" stroke-width="7" stroke-linecap="round"/>
+                            ${pan('L', 130, lcol, s.left, plan.maxL)}
+                            ${pan('R', 670, rcol, s.right, plan.maxR)}
+                        </g>
+                        <circle cx="400" cy="110" r="11" fill="#050505" stroke="rgba(255,255,255,0.85)" stroke-width="4"/>
+                    </svg>
+                </div>
+                <div class="em-side">${ci >= 0 ? `<div class="em-kicker">${esc(s.title)}</div>` : ''}<div class="em-big"></div><div class="em-text"></div>
+                    ${s.notToScale === false ? '' : `<div class="em-tag">${esc(s.notToScaleLabel || 'NOT TO SCALE')}</div>`}
+                </div>
+            </div></div>`;
+    },
+
+    conclusion: s => `
+        ${s.bg ? `<div class="conclusion-bg" style="background-image:url('${esc(s.bg)}')"></div>` : ''}
+        <div class="content-container column" style="align-items:stretch">
+            <h1 class="main-title" style="margin-bottom:0">${txt(s.title)}<span class="dot">.</span></h1>
+            <div class="conclusion-body-wrapper">
+                <div class="conclusion-left-body">
+                    <ul class="conclusion-list" style="margin-top:.3rem">
+                        ${s.bullets.map((b, k) => `<li${stp(s, k)}><strong>${esc(b.head)}</strong>: ${esc(b.text)}</li>`).join('')}
+                    </ul>
+                    <p class="description">${txt(s.desc)}</p>
+                </div>
+                <div class="conclusion-right-body"${stp(s, s.bullets.length)}><div class="final-quote-card"><p>${txt(s.quote)}</p></div></div>
+            </div>
+        </div>`
+};
+
+// 슬라이드 전체 조립 (헤더/푸터는 공통)
+// 번호 체계: 첫 슬라이드가 표지면 표지=0 이고 "0 / N" 으로 표시(원본과 동일). 표지가 없는 덱은 1부터 "1 / N".
+SLIDES.forEach(s => { if (s.type === 'scale' && !(s.steps && s.steps.length)) s.steps = [{}]; });   // scale 은 steps 생략 시 1단계 기본
+const hasCover = SLIDES[0] && SLIDES[0].type === 'cover';
+const numOf = i => hasCover ? i : i + 1;
+const total = hasCover ? SLIDES.length - 1 : SLIDES.length;
+if (DECK.maxSlides && SLIDES.length > DECK.maxSlides) console.warn(`슬라이드 ${SLIDES.length}장 > 상한 ${DECK.maxSlides}장`);
+SLIDES.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = `slide ${s.type}${s.chapterOf ? ' chapter-part' : ''}${i === 0 ? ' active' : ''}${s.build ? ' bx-' + (s.buildAnim || 'rise') : ''}`;
+    el.id = 'slide-' + (s.key || (s.type === 'toc' ? 'toc' : i));
+    el.dataset.type = s.type;
+    // TOC 슬라이드는 헤더가 없는 디자인 (원본과 동일)
+    const header = s.type === 'toc' ? '' : `
+        <div class="slide-header">
+            <div class="slide-tag">${esc(s.tag)} <span>${esc(DECK.tagSeparator)}</span> ${esc(s.num || pad2(numOf(i)))}</div>
+            <div class="slide-header-right">${s.presenter ? `<span class="slide-presenter">${esc(s.presenter)}</span>` : ''}<span>${esc(s.icon || '')}</span></div>
+        </div>`;
+    el.innerHTML = header + BUILDERS[s.type](s, i) +
+        `<div class="slide-footer"><div>${esc(s.footer || '')}</div><div><span class="step-dots"></span>${numOf(i)} / ${total}</div></div>`;
+    presentationEl.appendChild(el);
+    if (s.type === 'charts') chartDefs[i] = s.charts;
+    // findings 슬라이드의 results 를 차트 정의 형태로 변환 (renderCharts 가 그대로 그림)
+    if (s.type === 'findings') chartDefs[i] = s.results.map(r => ({
+        title: r.q, type: r.type || 'bar', labels: r.labels, legend: r.legend, horizontal: r.horizontal, max: r.max, min: r.min,
+        datasets: r.datasets || [{ label: r.label || 'Responses', data: r.data, colors: r.colors, color: r.color }]
+    }));
+});
+
+/* ======================================================================
+ *  3) 슬라이드 전환 로직
+ *     (이동 규칙은 모두 SLIDES 데이터에서 자동 계산)
+ * ====================================================================== */
+const slides = document.querySelectorAll('.slide');
+const TOC_INDEX = SLIDES.findIndex(s => s.type === 'toc');
+let currentSlide = 0;
+let flipBusy = false;   // 목차 ↔ 본문 전환 애니메이션 중에는 true → 그동안 클릭/키 입력을 무시해 애니메이션이 꼬이지 않게 함
+
+// fade:true 인 두 슬라이드가 서로 이웃(번호 차이 1)일 때만 느린 페이드를 쓴다.
+function checkAndApplyFadeEffect(from, to) {
+    slides.forEach(el => el.classList.remove('fade-transition'));
+    if (Math.abs(from - to) === 1 && SLIDES[from].fade && SLIDES[to].fade) {
+        slides[from].classList.add('fade-transition');
+        slides[to].classList.add('fade-transition');
+    }
+}
+
+// index 번째 슬라이드로 이동 (범위를 벗어나면 순환). 차트 슬라이드로 들어가면 차트를 다시 그림.
+function showSlide(index) {
+    const next = (index + slides.length) % slides.length;
+    checkAndApplyFadeEffect(currentSlide, next);
+    slides[currentSlide].classList.remove('active');
+    const prevIdx = currentSlide;
+    currentSlide = next;
+    // 새 슬라이드의 단계 상태를 (보이지 않는 동안) 정리: 앞으로 오면 0단계부터, 뒤로 돌아오면 완성된 상태로
+    {
+        const sl = slides[next], back = next < prevIdx && !(prevIdx === slides.length - 1 && next === 0);
+        sl.classList.add('no-tr');
+        applyStep(next, back ? stepMax[next] : 0, true);
+        void sl.offsetWidth;
+        sl.classList.remove('no-tr');
+    }
+    slides[currentSlide].classList.add('active');
+    onSlideChanged();   // 발표자 노트/타이머 갱신 (아래 발표 도구)
+    updateTocFab();
+    markVisited();
+    // 전환 애니메이션이 남겨 둔 인라인 투명도(opacity:0)를 정리한다.
+    // (예: 목차 → 본문 → ← 키로 목차 복귀 시 목차 내용이 투명한 채 남는 문제 방지)
+    // 애니메이션 도중(flipBusy)에는 애니메이션이 직접 관리하므로 건드리지 않는다.
+    if (!flipBusy) resetFlipStyles();
+    if (chartDefs[currentSlide]) setTimeout(() => renderCharts(currentSlide), 50);
+}
+
+function resetFlipStyles() {
+    tocParts().forEach(el => { if (el) { el.style.transition = ''; el.style.opacity = ''; } });
+    slides.forEach(sl => {
+        if (sl.dataset.type !== 'chapter' && !sl.classList.contains('chapter-part')) return;
+        const ti = sl.querySelector('.main-title'), gr = sl.querySelector('.unified-grid, .ch-fade');
+        if (ti) ti.style.opacity = '';
+        if (gr) { gr.style.transition = ''; gr.style.opacity = ''; }
+    });
+}
+
+// 이 슬라이드에서 화면 클릭으로 다음 장으로 넘어가도 되는가?
+const canClickNext = i => SLIDES[i].clickNext !== false;
+
+// 목차로 돌아가기: 버튼(☰ CONTENTS) / M 키. 챕터에서는 FLIP 애니메이션으로, 그 외 슬라이드에서는 바로 이동.
+// chapterOf:'<챕터 key>' 를 가진 슬라이드는 그 챕터의 제목(01. …)을 그대로 달고, 목차로 돌아갈 때 챕터와 같은 화살표 애니메이션을 씀
+function chapterIndexOf(i) {
+    const x = SLIDES[i];
+    if (x.type === 'chapter') return i;
+    return x.chapterOf ? SLIDES.findIndex(c => c.type === 'chapter' && c.key === x.chapterOf) : -1;
+}
+function goToTOC() {
+    if (flipBusy || TOC_INDEX < 0 || currentSlide === TOC_INDEX) return;
+    if (chapterIndexOf(currentSlide) >= 0) animateSlideToTOC(slides[currentSlide]);
+    else showSlide(TOC_INDEX);
+}
+function updateTocFab() {
+    const fab = document.getElementById('toc-fab'), t = SLIDES[currentSlide].type;
+    if (fab) fab.classList.toggle('show', TOC_INDEX >= 0 && t !== 'cover' && t !== 'toc');
+}
+document.getElementById('toc-fab').addEventListener('click', e => { e.stopPropagation(); goToTOC(); });
+
+/* ----------------------------------------------------------------------
+ *  단계(step) 엔진: 한 슬라이드 안에서 클릭할 때마다 한 단계씩 진행
+ *   - data-step="k" 요소(build:true 슬라이드): step >= k 가 되면 나타남(.on)
+ *   - emphasis 슬라이드: steps[] 개수만큼 단계가 있고, 단계마다 강조 대상이 바뀜
+ *   - 슬라이드의 총 단계 수(stepMax) = 위 둘 중 큰 값
+ * ---------------------------------------------------------------------- */
+const stepState = SLIDES.map(() => 0);
+const stepMax = SLIDES.map((s, i) => Math.max(0, (s.steps || []).length,
+    ...[...slides[i].querySelectorAll('[data-step]')].map(e => +e.dataset.step)));
+
+function applyStep(i, n, entering) {
+    n = clamp(n, 0, stepMax[i]);
+    stepState[i] = n;
+    const sl = slides[i];
+    sl.querySelectorAll('[data-step]').forEach(e => e.classList.toggle('on', +e.dataset.step <= n));
+    if (SLIDES[i].type === 'emphasis') renderEmphasis(i, n, entering);
+    else if (SLIDES[i].type === 'scale') renderScale(i, n, entering);
+    const dots = sl.querySelector('.step-dots');
+    if (dots) dots.innerHTML = (DECK.stepDots !== false && stepMax[i]) ? Array.from({ length: stepMax[i] + 1 }, (_, k) => `<i class="${k <= n ? 'on' : ''}"></i>`).join('') : '';
+}
+// 슬라이드에 nextTo:'toc' 를 주면, 그 슬라이드가 끝났을 때 다음 장 대신 목차로 돌아감(← 로 되돌아갈 때도 대칭).
+// 목차에서 → / 클릭 = 아직 안 본 첫 챕터로 이동. 본 챕터는 목차에서 ✓ 표시.
+const visitedChapters = new Set();
+function markVisited() {
+    if (chapterIndexOf(currentSlide) >= 0) visitedChapters.add(chapterIndexOf(currentSlide));
+    document.querySelectorAll('.toc-card').forEach(c => c.classList.toggle('done', visitedChapters.has(parseInt(c.dataset.target))));
+}
+function nextStep() {
+    if (stepState[currentSlide] < stepMax[currentSlide]) { applyStep(currentSlide, stepState[currentSlide] + 1); return; }
+    const cur = SLIDES[currentSlide];
+    if (cur.nextTo === 'toc' && TOC_INDEX >= 0 && currentSlide !== TOC_INDEX) { goToTOC(); return; }
+    if (cur.type === 'toc') {
+        const nextCh = SLIDES.findIndex((x, j) => x.type === 'chapter' && !visitedChapters.has(j));
+        const card = document.querySelector(`.toc-card[data-target="${nextCh}"]`);
+        if (nextCh >= 0 && card) { animateTOCToSlide(card, nextCh); return; }
+    }
+    showSlide(currentSlide + 1);
+}
+function prevStep() {
+    if (stepState[currentSlide] > 0) { applyStep(currentSlide, stepState[currentSlide] - 1); return; }
+    const prev = SLIDES[currentSlide - 1];
+    if (prev && prev.nextTo === 'toc' && TOC_INDEX >= 0 && currentSlide - 1 !== TOC_INDEX) { showSlide(TOC_INDEX); return; }
+    showSlide(currentSlide - 1);
+}
+
+// 글자 교체(옅게 사라졌다가 새 글자로). instant 면 애니메이션 없이 바로 교체
+function swapText(el, html, instant) {
+    if (!el || el.dataset.cur === html) return;
+    el.dataset.cur = html;
+    clearTimeout(el._t);
+    if (instant) { el.innerHTML = html; el.style.opacity = 1; return; }
+    el.style.opacity = 0;
+    el._t = setTimeout(() => { el.innerHTML = html; el.style.opacity = 1; }, 220);
+}
+
+/* 강조 비교 그리기: step 0 = 정확한 비율 / step k = steps[k-1].focus 만 키우고 나머지는 shrink 배율로 축소 */
+function renderEmphasis(i, step, instant) {
+    const s = SLIDES[i], root = slides[i], stage = root.querySelector('.em-stage');
+    if (!stage) return;
+    const steps = s.steps || [];
+    const st = step > 0 ? steps[Math.min(step, steps.length) - 1] : null;
+    const focus = (st && st.focus != null) ? st.focus : -1, emph = focus >= 0;
+    const shrink = s.shrink != null ? s.shrink : .3;                         // 강조 상태에서 나머지 항목의 크기 배율
+    const vals = s.items.map(it => +it.value || 0), max = Math.max(...vals) || 1, tot = vals.reduce((a, b) => a + b, 0) || 1;
+    const cols = emPalette(s);
+    root.classList.toggle('em-scaled', emph);
+    if (instant) {                                                           // 슬라이드 진입: 0 크기에서 자라나는 효과
+        stage.classList.add('enter'); clearTimeout(stage._t);
+        stage._t = setTimeout(() => stage.classList.remove('enter'), 500);
+    }
+    if (s.kind === 'donut') {
+        const R = 70, C = 2 * Math.PI * R, lgs = stage.querySelectorAll('.em-lg');
+        let acc = 0;
+        stage.querySelectorAll('.em-seg').forEach((c, k) => {
+            const frac = vals[k] / tot, start = acc * C, len = Math.max(frac * C - 3, .5);
+            acc += frac;
+            const mid = (start + frac * C / 2) / C * 2 * Math.PI, f = emph && k === focus, d = f ? 16 : 0;
+            c.style.strokeDasharray = `${len} ${C - len}`;
+            c.style.strokeDashoffset = -(start + 1.5);
+            c.style.strokeWidth = (emph ? (f ? 54 : 12) : 26) + 'px';
+            c.style.opacity = emph && !f ? .35 : 1;
+            c.style.transform = `translate(${Math.cos(mid) * d}px, ${Math.sin(mid) * d}px)`;   // 강조 조각은 바깥으로 튀어나옴
+            if (lgs[k]) lgs[k].classList.toggle('dim', emph && !f);
+        });
+        const ctr = stage.querySelector('.em-center'), it = emph ? s.items[focus] : null, cen = s.center || {};
+        const disp = it ? (it.display != null ? it.display : it.value) : (cen.display || '');
+        ctr.querySelector('b').style.color = emph ? cols[focus] : '#fff';
+        swapText(ctr.querySelector('b'), esc(disp), instant);
+        swapText(ctr.querySelector('span'), esc(it ? it.label : (cen.label || '')), instant);
+    } else if (s.kind === 'bubble') {
+        const Dmax = s.maxSize || 18, Dfocus = s.focusSize || 26;            // rem 단위. 면적이 값에 비례 → 지름 = Dmax * sqrt(비율)
+        stage.querySelectorAll('.em-bubble').forEach((c, k) => {
+            const base = Dmax * Math.sqrt(vals[k] / max), f = emph && k === focus;
+            const d = emph ? (f ? Dfocus : base * shrink) : base;
+            c.style.width = c.style.height = d + 'rem';
+            c.style.opacity = emph && !f ? .4 : 1;
+            c.style.boxShadow = f ? `0 0 4rem ${withAlpha(cols[k], .5)}` : 'none';
+            c.querySelector('b').style.fontSize = Math.max(.8, d * (f ? .16 : .15)) + 'rem';
+            c.querySelector('span').style.opacity = d < 5 ? 0 : 1;           // 너무 작으면 라벨 숨김
+        });
+    } else {
+        stage.querySelectorAll('.em-col').forEach((c, k) => {
+            const base = vals[k] / max * 100, f = emph && k === focus, bar = c.querySelector('.em-bar');
+            c.style.flexGrow = emph ? (f ? 2.4 : .55) : 1;                   // 강조 막대는 넓어지고 나머지는 좁아짐
+            bar.style.height = (emph ? (f ? 100 : base * shrink) : base) + '%';
+            bar.style.opacity = emph && !f ? .4 : 1;
+            bar.style.boxShadow = f ? `0 0 3rem ${withAlpha(cols[k], .45)}` : 'none';
+            c.querySelector('.em-val').style.fontSize = (f ? 3.4 : 1.4) + 'rem';
+        });
+    }
+    swapText(root.querySelector('.em-big'), txt(st ? st.big : s.big), instant);
+    swapText(root.querySelector('.em-text'), txt(st ? st.caption : s.caption), instant);
+}
+/* 저울 그리기: step 0 = 왼쪽 접시에만 동전 / step k = scalePlan 의 상태. 보는 기울고(오른쪽이 무거우면 시계방향), 접시는 반대로 돌아 수평 유지 */
+function renderScale(i, step, instant) {
+    const s = SLIDES[i], root = slides[i], stage = root.querySelector('.em-stage');
+    if (!stage) return;
+    const plan = scalePlan(s), tiltMax = s.tiltMax || 16;
+    const stateOf = n => plan.states[Math.min(n, plan.states.length - 1)];
+    const paint = (state, prev) => {
+        const th = state.tilt != null ? state.tilt : clamp((state.R - state.L) / Math.max(1, (state.L > 0 && state.R > 0) ? Math.min(state.L, state.R) : Math.max(state.L, state.R)), -1, 1) * tiltMax;   // 한쪽이 훨씬 무거우면 최대로 기울어짐
+        const added = Math.max(state.L - prev.L, state.R - prev.R, 0);
+        const delay = Math.min(.9, added * .04) + 's';                      // 동전이 어느 정도 쌓인 뒤 기울기 시작
+        const beam = stage.querySelector('.sc-beam');
+        beam.style.transitionDelay = delay;
+        beam.style.transform = `rotate(${th}deg)`;
+        stage.querySelectorAll('.sc-wrap').forEach(w => { w.style.transitionDelay = delay; w.style.transform = `rotate(${-th}deg)`; });
+        [['L', state.L, prev.L], ['R', state.R, prev.R]].forEach(([side, n, p]) => {
+            stage.querySelectorAll(`.sc-coin[data-side="${side}"]`).forEach(c => {
+                const k = +c.dataset.k, on = k < n;
+                c.style.opacity = on ? 1 : 0;
+                c.style.transform = `translate(${c.dataset.x}px, ${on ? c.dataset.y : (+c.dataset.y - 260)}px)`;
+                c.style.transitionDelay = (on && k >= p) ? ((k - p) * .06) + 's' : '0s';   // 새 동전은 하나씩 순서대로 툭툭 떨어짐
+            });
+        });
+        stage.querySelectorAll('.sc-gate').forEach(g => { g.style.opacity = state.R > 0 ? 1 : 0; });  // 오른쪽 라벨은 동전이 쌓이면 나타남
+    };
+    clearTimeout(stage._t);
+    if (instant) {
+        paint({ L: 0, R: 0 }, { L: 0, R: 0 });                               // 슬라이드 진입: 빈 저울에서 시작
+        stage._prev = { L: 0, R: 0 };
+        stage._t = setTimeout(() => { const cur = stateOf(stepState[i]); paint(cur, stage._prev); stage._prev = cur; }, 550);
+    } else {
+        const cur = stateOf(step);
+        paint(cur, stage._prev || { L: 0, R: 0 });
+        stage._prev = cur;
+    }
+    root.classList.toggle('em-scaled', step > 0);
+    const st = step > 0 ? (s.steps || [{}])[Math.min(step, (s.steps || [{}]).length) - 1] : null;
+    swapText(root.querySelector('.em-big'), txt(st ? st.big : s.big), instant);
+    swapText(root.querySelector('.em-text'), txt(st ? st.caption : s.caption), instant);
+}
+applyStep(0, 0, true);   // 첫 슬라이드의 초기 단계 상태
+updateTocFab();
+
+// 좌클릭 = 다음 슬라이드 (링크/버튼/카드/차트 등을 누른 경우는 제외)
+document.addEventListener('click', e => {
+    const interactive = e.target.closest('a, button, .toc-card, .card-image-wrapper, canvas, #image-modal');
+    if (!flipBusy && !interactive && (canClickNext(currentSlide) || stepState[currentSlide] < stepMax[currentSlide])) nextStep();
+});
+
+// 우클릭 = 이전. 단 본문(chapter)에서는 목차로 돌아가는 애니메이션
+document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (flipBusy) return;
+    if (document.getElementById('image-modal').classList.contains('active')) return;   // 확대 중엔 무시
+    if (stepState[currentSlide] > 0) prevStep();
+    else if (chapterIndexOf(currentSlide) >= 0 && TOC_INDEX >= 0) animateSlideToTOC(slides[currentSlide]);
+    else if (currentSlide > 0) showSlide(currentSlide - 1);
+});
+
+// 키보드: → / Space / Enter 다음, ← 이전
+window.addEventListener('keydown', e => {
+    if (flipBusy) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') nextStep();
+    else if (e.key === 'ArrowLeft') prevStep();
+    else if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey) goToTOC();   // M = 목차로
+    else if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {                         // 1~9 = 해당 챕터로 바로 이동
+        const idx = SLIDES.map((x, j) => x.type === 'chapter' ? j : -1).filter(j => j >= 0)[+e.key - 1];
+        if (idx != null && !flipBusy) showSlide(idx);
+    }
+});
+
+/* ======================================================================
+ *  4) 차트 (Chart.js) — 슬라이드에 들어올 때마다 새로 그려 애니메이션 재생
+ * ====================================================================== */
+let chartInstances = [];
+
+function renderCharts(slideIdx) {
+    if (typeof Chart === 'undefined') return;                 // 라이브러리 로딩 실패 시 조용히 건너뜀
+    chartInstances.forEach(c => c.destroy());                 // 재방문 시 겹침 방지
+    chartInstances = [];
+    Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+    Chart.defaults.font.family = 'Poppins, sans-serif';
+    Chart.defaults.font.size = Math.max(11, 18 * uiScale);     // 화면 배율에 맞춰 차트 글자도 비례
+
+    (chartDefs[slideIdx] || []).forEach((def, k) => {
+        const canvas = document.getElementById(`chart-${slideIdx}-${k}`);
+        if (!canvas) return;
+        const palette = ['sideA', 'sideB', '#ffffff', '#8a8a99', '#4a4a55'];   // doughnut 기본 색 순환
+        const isDonut = def.type === 'doughnut';
+        const datasets = def.datasets.map(d => {
+            if (isDonut) {
+                const src = d.colors || palette;
+                const cols = d.data.map((_, j) => colorOf(src[j % src.length]));
+                return { label: d.label, data: d.data, borderWidth: 2,
+                         backgroundColor: cols.map(c => withAlpha(c, .65)), borderColor: cols };
+            }
+            if (def.type === 'bar') {
+                const cols = (d.colors || [d.color]).map(colorOf);
+                return { label: d.label, data: d.data, borderWidth: 2, borderRadius: 8,
+                         backgroundColor: cols.map(c => withAlpha(c, .65)), borderColor: cols };
+            }
+            const c = colorOf(d.color);
+            return { label: d.label, data: d.data, borderColor: c, backgroundColor: withAlpha(c, .1),
+                     borderWidth: 3 * uiScale, tension: .3, fill: true };
+        });
+        const options = {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: (def.legend || isDonut) ? { position: isDonut ? 'right' : 'top', labels: { boxWidth: 12 } } : { display: false } }
+        };
+        if (isDonut) {
+            options.cutout = '62%';
+        } else {
+            const grid = { color: 'rgba(255,255,255,0.05)' };
+            options.animations = { y: { easing: 'easeOutQuart', duration: 1000, delay: 500 } };
+            options.indexAxis = def.horizontal ? 'y' : 'x';   // horizontal:true 면 가로 막대
+            // def.max / def.min : 값 축 고정 (예: 1~5점 척도는 max:5, min:0)
+            const vAx = { grid, beginAtZero: true };
+            if (def.max != null) vAx.max = def.max;
+            if (def.min != null) vAx.min = def.min;
+            options.scales = def.horizontal ? { x: vAx, y: { grid: { display: false } } }
+                                            : { y: vAx };
+        }
+        chartInstances.push(new Chart(canvas.getContext('2d'), {
+            type: def.type, data: { labels: def.labels, datasets }, options
+        }));
+    });
+}
+
+/* ======================================================================
+ *  5) TOC ↔ 본문 FLIP 전환 애니메이션 (제목이 화면을 가로질러 날아가는 효과)
+ *     위치/크기는 전부 실제 화면 좌표(getBoundingClientRect)로 계산하므로
+ *     화면 배율(uiScale)이 달라져도 그대로 동작합니다.
+ * ====================================================================== */
+
+// 날아가는 임시 제목(flyer)을 서서히 지우고 제거
+function removeFlyerWithFade(flyer) {
+    flyer.classList.add('fade-out');
+    flyer.addEventListener('transitionend', () => flyer.remove(), { once: true });
+}
+
+// 화살표 선을 곡선으로 그려나가는 애니메이션
+function animateArrowTrace(startX, startY, endX, endY, isReverse = false, callback = null) {
+    const path = document.querySelector('.trace-path');
+    path.setAttribute('marker-end', isReverse ? 'url(#arrow-backward)' : 'url(#arrow-forward)');
+    path.removeAttribute('marker-start');
+
+    // 베지어 곡선의 제어점: 수평으로 휘어지며 이어짐 (정/역방향 모두 같은 수식)
+    const c1x = startX + (endX - startX) * 0.4;
+    const c2x = startX + (endX - startX) * 0.6;
+    path.setAttribute('d', `M ${startX} ${startY} C ${c1x} ${startY}, ${c2x} ${endY}, ${endX} ${endY}`);
+
+    const len = path.getTotalLength();
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+    requestAnimationFrame(() => {
+        path.style.transition = 'stroke-dashoffset .6s cubic-bezier(0.25, 1, 0.5, 1)';
+        path.style.strokeDashoffset = '0';
+    });
+    setTimeout(() => {
+        if (callback) callback();
+        path.style.transition = 'none';
+        path.setAttribute('d', '');
+        path.removeAttribute('marker-end');
+    }, 600);
+}
+
+// 임시 제목(flyer) 하나를 만들어 body 에 붙임 (출발 위치/글자 스타일 복사)
+function makeFlyer(html, rect, cs) {
+    const f = document.createElement('div');
+    f.className = 'flying-title';
+    f.innerHTML = html;
+    Object.assign(f.style, {
+        position: 'fixed', left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', whiteSpace: 'normal',
+        lineHeight: cs.lineHeight, fontSize: cs.fontSize, fontWeight: cs.fontWeight, letterSpacing: cs.letterSpacing, color: cs.color
+    });
+    document.body.appendChild(f);
+    return f;
+}
+// flyer 를 도착 위치/글자 스타일로 이동시킴
+function flyTo(f, rect, cs) {
+    requestAnimationFrame(() => {
+        f.style.transition = 'all .6s cubic-bezier(0.25, 1, 0.5, 1)';
+        Object.assign(f.style, {
+            left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px',
+            lineHeight: cs.lineHeight, fontSize: cs.fontSize, fontWeight: cs.fontWeight, letterSpacing: cs.letterSpacing
+        });
+    });
+}
+
+// 목차 왼쪽/오른쪽 요소들 (전환 중 잠깐 숨겼다 보이게 함)
+const tocParts = () => [document.getElementById('toc-main-title'), document.getElementById('toc-description'),
+                        document.getElementById('toc-right-menu'), document.querySelector('#slide-toc .toc-footer-stats')];
+
+// 목차 → 본문 (정방향)
+function animateTOCToSlide(cardEl, targetIndex) {
+    if (flipBusy) return;
+    flipBusy = true;
+    setTimeout(() => { flipBusy = false; }, 1500);          // 전체 애니메이션(약 1.4초)이 끝나면 해제
+    const targetSlide = slides[targetIndex];
+    const targetTitle = targetSlide.querySelector('.main-title');
+    const targetGrid = targetSlide.querySelector('.unified-grid');
+    const anchor = cardEl.querySelector('.target-anchor');
+    const arrowRect = cardEl.querySelector('.toc-arrow').getBoundingClientRect();
+    const originRect = anchor.getBoundingClientRect();
+    const originCS = getComputedStyle(anchor);
+
+    // 숨겨진 상태의 도착 슬라이드를 잠깐 레이아웃시켜 제목의 도착 위치/스타일을 측정
+    targetSlide.style.visibility = 'hidden';
+    targetSlide.style.display = 'flex';
+    const targetRect = targetTitle.getBoundingClientRect();
+    const targetCS = getComputedStyle(targetTitle);
+    targetSlide.style.display = '';
+    targetSlide.style.visibility = '';
+
+    tocParts().forEach(el => { if (el) { el.style.transition = 'opacity .2s ease'; el.style.opacity = '0'; } });
+    if (targetGrid) { targetGrid.style.transition = 'none'; targetGrid.style.opacity = '0'; }
+    targetTitle.style.opacity = '0';
+
+    setTimeout(() => {
+        animateArrowTrace(arrowRect.left + arrowRect.width / 2, arrowRect.top + arrowRect.height / 2, targetRect.left, targetRect.bottom, false);
+        const flyer = makeFlyer(targetTitle.innerHTML, originRect, originCS);
+        flyTo(flyer, targetRect, targetCS);
+        setTimeout(() => {
+            showSlide(targetIndex);
+            if (targetGrid) { targetGrid.style.transition = 'opacity .6s ease'; targetGrid.style.opacity = '1'; }
+            setTimeout(() => { targetTitle.style.opacity = '1'; flyer.remove(); }, 600);
+        }, 600);
+    }, 200);
+}
+
+// 본문 → 목차 (역방향)
+function animateSlideToTOC(slideEl) {
+    if (flipBusy) return;
+    flipBusy = true;
+    setTimeout(() => { flipBusy = false; }, 1500);
+    const title = slideEl.querySelector('.main-title');
+    const grid = slideEl.querySelector('.unified-grid, .ch-fade');
+    const tocCard = document.querySelector(`.toc-card[data-target="${chapterIndexOf(currentSlide)}"]`);
+    if (!tocCard) { flipBusy = false; showSlide(TOC_INDEX); return; }
+    const anchor = tocCard.querySelector('.target-anchor');
+    const arrowRect = tocCard.querySelector('.toc-arrow').getBoundingClientRect();
+    const originRect = title.getBoundingClientRect();
+    const originCS = getComputedStyle(title);
+    const targetRect = anchor.getBoundingClientRect();
+    const targetCS = getComputedStyle(anchor);
+
+    tocParts().forEach(el => { if (el) { el.style.transition = 'none'; el.style.opacity = '0'; } });
+    title.style.opacity = '0';
+    if (grid) grid.style.opacity = '0';
+
+    animateArrowTrace(originRect.left, originRect.bottom, arrowRect.left + arrowRect.width / 2, arrowRect.top + arrowRect.height / 2, false);
+    const flyer = makeFlyer(title.innerHTML, originRect, originCS);
+    showSlide(TOC_INDEX);
+    flyTo(flyer, targetRect, targetCS);
+
+    setTimeout(() => {
+        tocParts().forEach(el => { if (el) { el.style.transition = 'opacity .4s ease'; el.style.opacity = '1'; } });
+        setTimeout(() => { title.style.opacity = '1'; if (grid) grid.style.opacity = '1'; removeFlyerWithFade(flyer); }, 400);
+    }, 600);
+}
+
+/* ======================================================================
+ *  5-b) 발표 도구: 발표자 노트(N) / 타이머(T, R) / 슬라이드 수 경고
+ *     - N : 현재 슬라이드의 notes(+발표자 이름) 패널 켜기/끄기
+ *     - T : 타이머 켜기/끄기 (켜는 순간 0부터 시작).  R : 타이머 0으로 리셋
+ *     - 발표자(presenter)가 바뀌는 슬라이드로 넘어가면 타이머가 자동으로 0부터 다시 시작
+ *     - 목표 시간대(DECK.timer): min 이상 = 초록, max 초과 = 깜빡임
+ * ====================================================================== */
+const notesEl = document.createElement('div'); notesEl.className = 'notes-panel';
+const hudEl = document.createElement('div');   hudEl.className = 'timer-hud';
+document.body.append(notesEl, hudEl);
+let timerOn = false, timerStart = 0, timerTick = null, lastPresenter = SLIDES[0].presenter || '';
+const fmtMS = ms => { const t = Math.floor(ms / 1000); return pad2(Math.floor(t / 60)) + ':' + pad2(t % 60); };
+
+function renderNotes() {
+    const s = SLIDES[currentSlide];
+    const over = DECK.maxSlides && SLIDES.length > DECK.maxSlides;
+    notesEl.innerHTML = `<div class="notes-head"><span>${esc(s.presenter || 'NOTES')}</span><span>${numOf(currentSlide)} / ${total}</span></div>
+        <div class="notes-body">${s.notes ? txt(s.notes) : '—'}</div>
+        ${over ? `<div class="notes-warn">⚠ ${SLIDES.length} slides (max ${DECK.maxSlides})</div>` : ''}`;
+}
+function renderHud() {
+    const T = DECK.timer || {}, el = timerOn ? Date.now() - timerStart : 0, min = el / 60000;
+    hudEl.classList.toggle('over', T.maxMinutes != null && min >= T.maxMinutes);
+    hudEl.classList.toggle('ok', T.minMinutes != null && min >= T.minMinutes && !(T.maxMinutes != null && min >= T.maxMinutes));
+    hudEl.innerHTML = `${lastPresenter ? esc(lastPresenter) + ' · ' : ''}<span class="t">${fmtMS(el)}</span>${T.maxMinutes != null ? ' / ' + pad2(T.maxMinutes) + ':00' : ''}`;
+}
+function setTimer(on) {
+    timerOn = on; clearInterval(timerTick); hudEl.classList.toggle('show', on);
+    if (on) { timerStart = Date.now(); renderHud(); timerTick = setInterval(renderHud, 500); }
+}
+function onSlideChanged() {
+    renderNotes();
+    const p = SLIDES[currentSlide].presenter || '';
+    if (p !== lastPresenter) { lastPresenter = p; if (timerOn) timerStart = Date.now(); }   // 발표자 교대 → 타이머 리셋
+    if (timerOn) renderHud();
+}
+window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === 'n') { renderNotes(); notesEl.classList.toggle('show'); }
+    else if (k === 't') setTimer(!timerOn);
+    else if (k === 'r' && timerOn) { timerStart = Date.now(); renderHud(); }
+});
+renderNotes();
+
+/* ======================================================================
+ *  6) 초기화: 커서, 라이트박스, 목차 클릭, 리사이즈
+ * ====================================================================== */
+(function init() {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-img');
+    const cursor = document.querySelector('.custom-cursor');
+
+    // Esc 핑 이펙트용 요소
+    const ping = document.createElement('div');
+    ping.className = 'cursor-ping';
+    document.body.appendChild(ping);
+
+    // 커서/핑이 마우스를 따라다님
+    document.addEventListener('mousemove', e => {
+        requestAnimationFrame(() => {
+            cursor.style.left = ping.style.left = e.clientX + 'px';
+            cursor.style.top  = ping.style.top  = e.clientY + 'px';
+        });
+    });
+    document.addEventListener('mousedown', () => cursor.classList.add('click-active'));
+    document.addEventListener('mouseup',   () => cursor.classList.remove('click-active'));
+
+    // 클릭 가능한 요소 위에서는 커서를 키움
+    const hoverTargets = '.toc-card, .unified-card, canvas, #image-modal, .card-image-wrapper, .hidden-jump-btn, #toc-fab';
+    document.addEventListener('mouseover', e => { if (e.target.closest(hoverTargets)) cursor.classList.add('hover-active'); });
+    document.addEventListener('mouseout',  e => { if (!e.target.closest(hoverTargets)) cursor.classList.remove('hover-active'); });
+
+    // Esc: 마우스 위치에서 핑 애니메이션
+    window.addEventListener('keydown', e => {
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        ping.classList.remove('animate');
+        void ping.offsetWidth;            // 리플로우로 애니메이션 재시작
+        ping.classList.add('animate');
+    });
+
+    // 목차 카드 클릭 → 해당 본문으로 FLIP 이동
+    document.querySelectorAll('.toc-card').forEach(card => {
+        card.addEventListener('click', () => animateTOCToSlide(card, parseInt(card.dataset.target)));
+    });
+
+    // 숨은 '결론으로 이동' 버튼
+    const jump = document.getElementById('jump-to-end');
+    if (jump) jump.addEventListener('click', e => { e.stopPropagation(); showSlide(parseInt(jump.dataset.target)); });
+
+    // 카드 이미지 클릭 → 라이트박스 확대, 바깥 클릭 → 닫기
+    document.querySelectorAll('.card-img').forEach(img => {
+        img.addEventListener('click', e => {
+            e.stopPropagation();
+            modalImg.src = img.getAttribute('src');
+            modal.classList.add('active');
+        });
+    });
+    modal.addEventListener('click', () => {
+        modal.classList.remove('active');
+        setTimeout(() => { modalImg.src = ''; }, 400);
+    });
+
+    // 창 크기가 바뀌면(발표 화면 전환 등) 배율 재계산. 차트 슬라이드면 글자 크기 반영을 위해 다시 그림
+    let t;
+    window.addEventListener('resize', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+            applyScale();
+            if (chartDefs[currentSlide]) renderCharts(currentSlide);
+        }, 150);
+    });
+})();
+</script>
+</body>
+</html>

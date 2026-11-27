@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Board - Final</title>
+
+    <!-- 손그림 느낌의 색연필 원(낙서) 라이브러리 -->
+    <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
+
+    <!-- 구글 폰트: 제목(Gaegu), 캡션(Poppins), 한글(Noto Sans KR) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Poppins:ital,wght@0,300;0,700;0,900;1,300&family=Noto+Sans+KR:wght@300;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+         *  기본 설정
+         * ============================================================ */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; letter-spacing: 2px; }
+
+        /* --hs : 제목/QR/스티커의 UI 배율. 화면 크기에 따라 JS(layout)가 자동으로 바꿉니다. */
+        :root { --hs: 1; }
+
+        /* ============================================================
+         *  보드(나무판 배경) : 화면의 3배 크기(300vw x 300vh)
+         *  - 실제로 보이는 "기본 화면"은 보드 정중앙의 1배 영역입니다.
+         *  - 줌인할 때 이 큰 보드를 transform(이동+확대)해서 카드 세트를 화면 중앙으로 가져옵니다.
+         * ============================================================ */
+        .board-container {
+            background-image: url("./Pictures/wood-board-background.jpg");
+            background-repeat: repeat;
+            background-size: 512px;          /* 배경 이미지 원본 크기에 맞게 조절 */
+            background-attachment: fixed;    /* 줌 중에도 배경 무늬가 늘어나지 않게 고정 */
+            background-color: #c9a876;       /* 이미지 로딩 전/이음새 대비 색 */
+            image-rendering: -webkit-optimize-contrast;
+
+            /* 화면 중앙에 보드의 중심이 오도록 왼쪽/위로 1배만큼 당겨 둠 */
+            position: absolute; top: -100vh; left: -100vw;
+            width: 300vw; height: 300vh;
+
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);   /* 줌 애니메이션 */
+            transform-origin: center center;
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: subpixel-antialiased;
+            pointer-events: auto;            /* 빈 배경 클릭 → 줌아웃 */
+        }
+        /* 줌인 상태에서는 글자가 선명하게 보이도록 렌더링 옵션 변경 */
+        .board-container.zoomed {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        /* 줌인 중에는 카드/QR 클릭을 막아서, 어디를 눌러도 "빈 배경 클릭"으로 처리 → 줌아웃 */
+        .board-container.zoomed .photo-card,
+        .board-container.zoomed .qr-section { pointer-events: none !important; }
+
+        /* ============================================================
+         *  제목 메모지 (위치/크기는 JS layout()이 화면 크기에 맞춰 지정)
+         * ============================================================ */
+        .header-memo {
+            position: absolute;
+            background: linear-gradient(135deg, #fffef0 0%, #f7f3d7 100%);   /* 종이 느낌 */
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.15), inset 0 0 5px rgba(255,255,255,0.5);
+            border: 1px solid #e8e4c9;
+            border-radius: 2px;
+            display: flex; align-items: center; justify-content: center;
+            box-sizing: border-box;
+            padding: 0 12px;
+            text-align: center;
+            transform: rotate(-1.5deg);      /* 살짝 비뚤게 */
+            z-index: 20;
+        }
+        /* 메모지 윗부분의 톱니(찢어진 종이) 장식 */
+        .header-memo::before {
+            content: '';
+            position: absolute;
+            top: -5px; left: 0; right: 0;
+            height: 10px;
+            background-image: radial-gradient(circle, #fffef0 3px, transparent 3px);
+            background-size: 10px 10px;
+            background-position: 0 -5px;
+        }
+        .header-memo .caption-title {
+            font-size: calc(3rem * var(--hs));   /* 화면이 작으면 글자도 같이 작아짐 */
+            line-height: 1.1;
+            color: #555;
+            font-family: 'Gaegu', sans-serif;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        /* ============================================================
+         *  QR 코드 (위치/크기는 JS가 지정)
+         * ============================================================ */
+        .qr-section {
+            position: absolute;
+            background: white; padding: 10px; box-sizing: border-box;
+            cursor: pointer;
+            z-index: 50;
+            transform: rotate(7deg);
+        }
+        .qr-section img { width: 100%; height: 100%; display: block; pointer-events: none; }
+
+        /* ============================================================
+         *  카드 세트(.group)
+         *  - 크기 0x0 의 "기준점"이고, 카드들은 이 점을 중심으로 흩어져 배치됩니다.
+         *  - transform: scale(s) 로 세트 전체를 한 번에 키우고 줄입니다.
+         *  - pointer-events:none → 빈 공간 클릭이 세트에 가로채이지 않고, 카드만 클릭됩니다.
+         * ============================================================ */
+        .group {
+            position: absolute;
+            width: 0; height: 0;
+            transform-origin: 0 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ============================================================
+         *  사진 카드(폴라로이드)
+         *  - left/top 은 "카드 중심"이 그룹 기준점에 오도록 (350x435)/2 만큼 당긴 값
+         *  - --cx / --cy / --rot 은 JS(build)가 카드마다 지정 (위치 px, 회전 deg)
+         * ============================================================ */
+        .photo-card {
+            width: 320px; background: white; padding: 15px 15px 0;     /* 실제 크기 350 x 435 */
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
+            position: absolute;
+            left: -175px; top: -217.5px;
+            transform: translate(var(--cx, 0px), var(--cy, 0px)) rotate(var(--rot, 0deg));
+            cursor: pointer;
+            pointer-events: auto;     /* 부모(.group)는 꺼져 있으니 카드에서 다시 켬 */
+        }
+        .photo-card img {
+            width: 100%; height: 320px; object-fit: cover; display: block;
+            background: #ddd;                            /* 이미지 로딩 전/실패 시 회색 */
+            pointer-events: none;                        /* 이미지 기본 드래그가 클릭을 방해하지 않도록 */
+            -webkit-user-drag: none; user-select: none;
+        }
+        /* 하단 캡션 영역: 높이 고정(100px) → 설명글 표시 여부와 상관없이 카드 크기 불변 */
+        .photo-card .caption {
+            height: 100px; box-sizing: border-box;
+            padding: 10px 4px 0; overflow: hidden;
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+        }
+        .caption-title { font-weight: 700; font-size: 15px; color: #2a2a2a; margin: 0 0 5px; }
+        .caption-desc  { display: none; font-size: 13px; color: #494949; line-height: 1.45; margin: 0; }
+        /* 줌인된 세트(.active-zoom)에서만 설명글을 보여줌 (줌아웃하면 다시 숨김) */
+        .group.active-zoom .caption-desc { display: block; }
+
+        /* ============================================================
+         *  압정 : radial-gradient 로 구체 입체감 + ::after 로 광택
+         *  색 추가: .pin-보라 { background: radial-gradient(...) } 를 만들고
+         *           카드의 pin: '보라' 로 지정하면 됩니다.
+         * ============================================================ */
+        .pin {
+            width: 26px; height: 26px; border-radius: 50%;
+            position: absolute; top: -13px; left: 50%;
+            transform: translateX(-50%); z-index: 10;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.45),
+                        inset -3px -4px 6px rgba(0,0,0,0.35),
+                        inset 2px 3px 4px rgba(255,255,255,0.5);
+        }
+        .pin::after {
+            content: ''; position: absolute; top: 4px; left: 6px;
+            width: 8px; height: 5px; background: rgba(255,255,255,0.9);
+            border-radius: 50%; filter: blur(0.4px);
+        }
+        .pin-blue   { background: radial-gradient(circle at 35% 30%, #7d7dff 0%, #4c4cd6 55%, #26268f 100%); }
+        .pin-green  { background: radial-gradient(circle at 35% 30%, #6be899 0%, #34c576 55%, #1a8a4f 100%); }
+        .pin-red    { background: radial-gradient(circle at 35% 30%, #ff8a8a 0%, #e04545 55%, #9a1c1c 100%); }
+        .pin-yellow { background: radial-gradient(circle at 35% 30%, #ffe680 0%, #f2b90c 55%, #a77c00 100%); }
+
+        /* ============================================================
+         *  스티커 (순수 장식: 클릭/줌에 영향 없음)
+         *  - 크기(width)는 JS가 지정. 안의 svg/img는 그 너비에 맞춰 늘어납니다.
+         * ============================================================ */
+        .sticker {
+            position: absolute; pointer-events: none;
+            filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
+        }
+        .sticker svg, .sticker img { width: 100%; height: auto; display: block; }
+
+        /* ============================================================
+         *  모바일(768px 이하): 절대좌표 배치를 끄고 세로로 쭉 나열
+         *  - JS가 모바일일 때 인라인 좌표를 지우고, 아래 CSS가 레이아웃을 담당합니다.
+         * ============================================================ */
+        @media (max-width: 768px) {
+            html, body {
+                margin: 0 !important; padding: 0 !important;
+                background-image: url('./Pictures/wood-board-background.jpg') !important;
+                background-repeat: repeat-y !important;
+                background-size: 100% auto !important;
+                overflow-y: auto !important;          /* 모바일은 스크롤 허용 */
+                height: auto !important;
+            }
+            .board-container, #board {
+                position: relative !important;
+                display: flex !important; flex-direction: column !important; align-items: center !important;
+                width: 100% !important; height: auto !important;
+                padding: 20px 0 !important;
+                transform: none !important; left: 0 !important; top: 0 !important;
+            }
+            .header-memo {
+                height: auto !important; padding: 30px !important;
+                width: 85% !important; word-wrap: break-word !important;
+            }
+            .header-memo .caption-title { font-size: 2.2rem; }
+            /* 모든 요소를 흐름 배치로 되돌리고 아래 간격 확보 */
+            .header-memo, .qr-section, .group, .photo-card {
+                position: relative !important; display: block !important;
+                margin: 0 auto 30px auto !important;
+                top: auto !important; left: auto !important;
+                transform: none !important;
+            }
+            .qr-section { width: 150px !important; height: 150px !important; margin-bottom: 40px !important; }
+            .group { width: 90% !important; height: auto !important; margin: 40px auto !important; overflow: visible !important; }
+            .photo-card { width: 100% !important; margin: 20px 0 40px !important; float: none !important; }
+            .photo-card img { width: 100% !important; height: auto !important; margin-bottom: 10px !important; }
+            .photo-card .caption { height: auto !important; min-height: 100px; }
+            .caption-desc { display: block !important; }   /* 모바일은 설명글 항상 표시 */
+            .pin, .sticker { display: none !important; }   /* 장식은 숨김 */
+        }
+    </style>
+</head>
+<body>
+
+<!-- 보드: 아래 요소 대부분은 JS(build/layout)가 만들고 배치합니다. -->
+<div class="board-container" id="board" onclick="resetZoom(event)">
+    <div id="stickers"></div>                                       <!-- 스티커가 들어가는 칸 (자동 생성) -->
+    <div class="header-memo" id="header"><a id="header-link" class="caption-title"></a></div>
+    <div class="qr-section" id="qr" onclick="zoomIn(event, this)"><img id="qr-img" alt="QR Code"></div>
+    <!-- 카드 세트(.group)는 아래 CARD_SETS 데이터로 자동 생성됩니다 -->
+</div>
+
+<script>
+/* ======================================================================
+ *  ★★★ 여기부터 "★ 수정 영역" 끝까지만 고치면 됩니다 ★★★
+ *  (그 아래 "자동 생성/배치 로직"은 보통 건드릴 필요 없습니다)
+ * ====================================================================== */
+
+/* ----------------------------------------------------------------------
+ *  [1] 기본 설정
+ * ---------------------------------------------------------------------- */
+const CONFIG = {
+    title: 'Country Comparison: Korea & Ireland',   // 상단 메모지 제목
+    titleLink: 'Slide_show.html',                   // 제목 클릭 시 이동할 주소 (필요 없으면 '')
+    qrImage: './Pictures/Github_pages_QR.svg',      // QR 이미지 경로
+    seed: 7,            // 스티커 위치/자동배치의 난수 씨앗. 숫자를 바꾸면 배치 패턴이 달라짐
+    maxZoom: 3,         // 줌인 최대 배율
+    zoomFill: 0.9,      // 줌인 시 카드 세트가 화면을 채우는 비율 (0~1)
+    stickerCount: null, // [가장자리 스티커] 화면 가장자리에 붙어 카드/가장자리 뒤로 겹쳐 가려지는 스티커 개수.
+                        //   null = 세트 개수에 맞춰 자동, 0 = 없음, 숫자 = 고정 개수
+    stickerFreeCount: 8 // [빈 공간 스티커] 카드·제목·QR을 피해 빈 자리에 놓는 스티커 개수. 0 = 없음.
+                        //   빈 자리가 부족하면 개수보다 적게 놓일 수 있음 (겹치게 놓지는 않음)
+};
+
+/* ----------------------------------------------------------------------
+ *  [2] 스티커 목록
+ *   - 이 중에서 무작위로 골라 화면 가장자리에 붙입니다.
+ *   - 빼고 싶으면 해당 줄을 지우거나 앞에 // 를 붙이세요 (예: 태극기 제거).
+ *   - 추가하는 방법 2가지:
+ *       (a) SVG 코드 : { name:'이름', svg:'<svg viewBox="0 0 40 40">...</svg>' }
+ *           → width/height 속성은 쓰지 말고 viewBox 만 쓰세요 (크기는 width 값으로 조절됨)
+ *       (b) 이미지 파일 : { name:'이름', img:'./Pictures/sticker1.png', width:70 }
+ *   - width : 스티커 기본 너비(px). 생략하면 50. 화면 크기에 맞춰 자동으로 줄어듭니다.
+ *   - 같은 항목을 여러 번 적으면 그 스티커가 더 자주 나옵니다.
+ * ---------------------------------------------------------------------- */
+const STICKERS = [
+    //{ name: '태극기', width: 60, svg:
+    //  `<svg viewBox="0 0 60 40"><rect x="1" y="1" width="58" height="38" rx="3" fill="#fff" stroke="#ddd"/><circle cx="30" cy="20" r="9" fill="#c60c30"/><path d="M30,11 A4.5,4.5 0 0,1 30,20 A4.5,4.5 0 0,0 30,29 A9,9 0 0,1 30,11 Z" fill="#003478"/><g stroke="#111" stroke-width="1.4"><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="14" x2="15" y2="14"/><line x1="9" y1="26" x2="15" y2="26"/><line x1="9" y1="29" x2="15" y2="29"/><line x1="9" y1="32" x2="15" y2="32"/><line x1="45" y1="8" x2="51" y2="8"/><line x1="45" y1="11" x2="51" y2="11"/><line x1="45" y1="14" x2="51" y2="14"/><line x1="45" y1="26" x2="51" y2="26"/><line x1="45" y1="29" x2="51" y2="29"/><line x1="45" y1="32" x2="51" y2="32"/></g></svg>` },
+
+    { name: '아일랜드 국기', width: 60, svg:
+      `<svg viewBox="0 0 60 40"><rect x="1" y="1" width="58" height="38" rx="3" fill="#fff" stroke="#ddd"/><rect x="2" y="2" width="18.7" height="36" fill="#169b62"/><rect x="20.7" y="2" width="18.7" height="36" fill="#fff"/><rect x="39.3" y="2" width="18.7" height="36" fill="#ff883e"/></svg>` },
+
+    { name: '하트', width: 40, svg:
+      `<svg viewBox="0 0 40 36"><path d="M20,34 C20,34 2,22 2,11 C2,4 8,0 13,0 C17,0 20,3 20,7 C20,3 23,0 27,0 C32,0 38,4 38,11 C38,22 20,34 20,34 Z" fill="#e0435b"/></svg>` },
+
+    { name: '별', width: 40, svg:
+      `<svg viewBox="0 0 40 38"><path d="M20,0 L24.5,13.5 L39,13.8 L27.3,22.3 L31.4,36 L20,27.8 L8.6,36 L12.7,22.3 L1,13.8 L15.5,13.5 Z" fill="#f2b90c"/></svg>` }
+
+    // ── 추가 예시 (앞의 // 를 지우면 사용됩니다) ──
+    // ,{ name: '스마일', width: 44, svg: `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#ffd84d" stroke="#c9a100" stroke-width="2"/><circle cx="14" cy="16" r="2.5" fill="#333"/><circle cx="26" cy="16" r="2.5" fill="#333"/><path d="M10,24 Q20,34 30,24" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>` }
+    // ,{ name: '내 스티커 이미지', img: './Pictures/sticker1.png', width: 70 }
+];
+
+/* ----------------------------------------------------------------------
+ *  [3] 카드 세트 데이터  ← 가장 자주 수정하는 곳
+ *   - { cards: [...] } 블록 하나가 "카드 세트" 하나입니다. 추가/삭제하면 자동 반영.
+ *   - 한 세트에 카드 1~4장 (보통 2장 비교용). 장수별 배치는 아래 [4]에서 조정.
+ *   - 카드 필드:
+ *       img    : 이미지 주소 (필수)
+ *       title  : 제목 (필수) — 항상 보임
+ *       desc   : 설명글 — 줌인했을 때만 보임
+ *       pin    : 'blue' | 'green' | 'red' | 'yellow'  (생략 시 번갈아 자동)
+ *       rot    : 회전각(도). 생략 시 [4]의 값 사용
+ *       dx, dy : 위치 미세 조정(px). 생략 가능
+ *   - 세트 필드:
+ *       pos    : [x, y] 이 세트만 위치 직접 지정 (0~1, 아래 [5] 참고). 생략 가능
+ * ---------------------------------------------------------------------- */
+const CARD_SETS = [
+    { cards: [
+        { img: 'https://upload.wikimedia.org/wikipedia/commons/6/63/Irish_Folk_session_The_Old_Dubliner_Hamburg_337-0007-hinnerk-ruemenapf.jpg',
+          title: 'Interactive Arts: Seisiún',
+          desc: 'Musicians and audience share songs, jokes, and dances together in pubs.', pin: 'green' },
+        { img: 'https://www.gugak.go.kr/ency/media/thumb/7716',
+          title: 'Interactive Arts: Pansori',
+          desc: "Singer and audience actively engage through 'chuimsae', blending song and gesture.", pin: 'blue' }
+    ]},
+    { cards: [
+        { img: 'https://i0.wp.com/www.spicetheplate.com/wp-content/uploads/2017/01/Pork-Belly-Kimchi-Stew-12.jpg?fit=680%2C1020&ssl=1',
+          title: 'Broth Culture: Kimchi Jjigae',
+          desc: 'Jjigae and Gukbap are shared at the table as soul food to warm the body and build bonds.', pin: 'blue' },
+        { img: 'https://www.theirishmanswife.com/wp-content/uploads/2024/04/Beef-Guinness-Stew-2.jpg',
+          title: 'Broth Culture: Irish Stew',
+          desc: 'Irish Stew and Coddle are classic comfort foods simmered to endure cold weather and bring families together.', pin: 'green' }
+    ]},
+    { cards: [
+        { img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/070401_Panmunjeom3.jpg/1280px-070401_Panmunjeom3.jpg',
+          title: 'History: Panmunjeon',
+          desc: 'Divided along the 38th parallel post-WWII, suffering from the tragic Korean War.', pin: 'blue' },
+        { img: 'https://cloudfront-us-east-2.images.arcpublishing.com/reuters/ROBWR2WA2RLZJPCTHTHJZZPFOE.jpg',
+          title: 'History: The Troubles',
+          desc: "Divided following British colonial rule, suffering from the armed conflict known as 'The Troubles'.", pin: 'green' }
+    ]}
+    // 새 세트 추가 예 (위 블록 뒤에 쉼표 , 를 붙이고 이어서 작성):
+    // { cards: [ { img:'...', title:'...', desc:'...' }, { img:'...', title:'...', desc:'...' } ] }
+];
+
+/* ----------------------------------------------------------------------
+ *  [4] 그룹 안 카드 배치 프리셋 (한 세트의 "카드 장수"별)
+ *   - 카드 장수(키) → 카드별 { x, y, rot }
+ *       x, y : 그룹 중심 기준 위치(px). 양수 x = 오른쪽, 양수 y = 아래쪽
+ *       rot  : 회전각(도). 양수 = 시계방향
+ *   - 카드 크기는 350 x 435 입니다. 카드 사이 간격을 정할 때 참고하세요.
+ *   - 순서 = cards 배열 순서 (뒤에 있는 카드가 위에 겹침)
+ *   - 홀수 번째 세트는 위아래/기울기가 좌우 반전되어 세트마다 조금씩 다르게 보입니다.
+ *   - 5장 이상은 프리셋이 없어서 가로 한 줄로 자동 배치됩니다.
+ * ---------------------------------------------------------------------- */
+const CARD_ARRANGE = {
+    1: [{ x: 0,    y: 0,    rot: -3 }],
+    2: [{ x: -172, y: -28,  rot: -5 }, { x: 172,  y: 28,   rot: 5 }],
+    3: [{ x: -325, y: 22,   rot: -7 }, { x: 0,    y: -28,  rot: 2 }, { x: 325, y: 28, rot: 7 }],
+    4: [{ x: -185, y: -225, rot: -4 }, { x: 185,  y: -205, rot: 4 }, { x: -170, y: 225, rot: 5 }, { x: 190, y: 215, rot: -4 }]
+};
+
+/* ----------------------------------------------------------------------
+ *  [5] 카드 "세트"들의 화면 배치 프리셋 (세트 개수별)
+ *   - 세트 개수(키) → 각 세트 중심 위치 [x, y]
+ *       0~1 비율. 카드가 놓이는 영역 기준이며 왼쪽 위가 [0,0], 오른쪽 아래가 [1,1]
+ *   - 배열 순서 = CARD_SETS 순서. 예: 3개일 때 첫 번째 세트가 위쪽 꼭짓점.
+ *   - 7개 이상 등 여기 없는 개수는 엇갈린 격자로 자동 배치됩니다.
+ *   - 크기(배율)는 위치를 보고 "겹치지 않는 최대 크기"로 자동 계산되니 위치만 정하면 됩니다.
+ * ---------------------------------------------------------------------- */
+const LAYOUTS = {
+    1: [[0.5, 0.5]],
+    2: [[0.27, 0.42], [0.73, 0.60]],                                     // 대각선
+    3: [[0.50, 0.25], [0.24, 0.76], [0.77, 0.73]],                       // 삼각형 (위 1 / 아래 2)
+    4: [[0.26, 0.27], [0.72, 0.24], [0.30, 0.76], [0.77, 0.73]],         // 엇갈린 2x2
+    5: [[0.25, 0.25], [0.74, 0.27], [0.15, 0.74], [0.50, 0.70], [0.85, 0.75]],
+    6: [[0.17, 0.26], [0.50, 0.29], [0.83, 0.25], [0.20, 0.75], [0.52, 0.72], [0.84, 0.76]]
+};
+
+/* ======================================================================
+ *  ★ 수정 영역 끝 — 아래는 자동 생성/배치 로직 ★
+ * ====================================================================== */
+
+/* ---------- 공통 상수/전역 상태 ---------- */
+const CARD_W = 350, CARD_H = 435;     // 카드 실제 크기(패딩 포함). CSS .photo-card 와 맞춰야 함
+const CARD_PITCH = 340;               // 5장 이상일 때 카드 간 가로 간격(px)
+const ROT_PRESETS = [5, -5, -8, 4, 10, -10, 3, -6];  // 프리셋 없는 카드의 회전각 후보
+const board = document.getElementById('board');
+const allAnnotations = [];            // 모든 색연필 원 인스턴스 (줌 중에 한꺼번에 숨기기 위해 보관)
+let isZooming = false;                // 줌 상태 잠금: 줌 중에는 호버 낙서를 띄우지 않음
+
+/* ---------- 작은 유틸 함수들 ---------- */
+// 모바일(768px 이하) 여부 — CSS 미디어쿼리와 같은 기준
+const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+// 값을 [a, b] 범위로 제한
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+// 씨앗(seed)이 같으면 항상 같은 값을 주는 난수 생성기 → 새로고침해도 배치가 안 바뀜
+function rng(seed) {
+    let t = seed >>> 0;
+    return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ t >>> 15, 1 | t);
+        r ^= r + Math.imul(r ^ r >>> 7, 61 | r); return ((r ^ r >>> 14) >>> 0) / 4294967296; };
+}
+// DOM 요소 생성 도우미: tag, class, 부모, (선택)텍스트. 텍스트는 textContent로 넣어 HTML 주입을 막음
+function mk(tag, cls, parent, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+}
+
+/* ======================================================================
+ *  1) 데이터 → DOM 생성 (페이지 로드 시 한 번만 실행)
+ * ====================================================================== */
+const groups = []; // 세트별 정보: { el: DOM, local: 그룹 내부 바운딩박스, vis: 화면 배치 후 보드 좌표/크기 }
+
+function build() {
+    // 제목 메모지 / QR 내용 채우기
+    const link = document.getElementById('header-link');
+    link.textContent = CONFIG.title;
+    if (CONFIG.titleLink) link.href = CONFIG.titleLink;
+    document.getElementById('qr-img').src = CONFIG.qrImage;
+
+    CARD_SETS.forEach((set, si) => {
+        const n = set.cards.length;               // 이 세트의 카드 장수
+        const g = mk('div', 'group', board);      // 세트(그룹) 요소
+        g.id = 'group-' + si;
+
+        // 세트 안 모든 카드를 감싸는 사각형(local bounds)을 수식으로 계산한다.
+        // → DOM을 측정하지 않으므로 줌/스케일 중에도 값이 흔들리지 않는다.
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const boxes = [];   // 카드별 (회전 고려) 점유 사각형 — 빈 공간 스티커가 카드를 피할 때 사용
+
+        set.cards.forEach((c, i) => {
+            // 카드 위치/회전 결정: [4]의 장수별 프리셋 → 없으면 가로 한 줄 자동
+            const flip = si % 2 ? -1 : 1;         // 홀수 세트는 상하/기울기 반전해 변화를 줌
+            const a = (CARD_ARRANGE[n] && CARD_ARRANGE[n][i]) ||
+                      { x: (i - (n - 1) / 2) * CARD_PITCH, y: (i % 2 ? 1 : -1) * 28,
+                        rot: ROT_PRESETS[(si * 2 + i) % ROT_PRESETS.length] };
+            const cx  = a.x + (c.dx || 0);
+            const cy  = a.y * flip + (c.dy || 0);
+            const rot = c.rot != null ? c.rot : a.rot * flip;
+
+            // 회전된 카드가 차지하는 가로/세로 반폭(hw, hh)을 구해 바운딩박스를 넓힌다
+            const rad = rot * Math.PI / 180;
+            const hw = (CARD_W * Math.abs(Math.cos(rad)) + CARD_H * Math.abs(Math.sin(rad))) / 2;
+            const hh = (CARD_W * Math.abs(Math.sin(rad)) + CARD_H * Math.abs(Math.cos(rad))) / 2;
+            minX = Math.min(minX, cx - hw); maxX = Math.max(maxX, cx + hw);
+            minY = Math.min(minY, cy - hh); maxY = Math.max(maxY, cy + hh);
+            boxes.push({ cx, cy, hw: hw + 10, hh: hh + 12 });   // 그림자/압정 여유 포함
+
+            // 카드 DOM 생성: 위치/회전은 CSS 변수로 전달
+            const card = mk('div', 'photo-card', g);
+            card.style.setProperty('--cx', cx + 'px');
+            card.style.setProperty('--cy', cy + 'px');
+            card.style.setProperty('--rot', rot + 'deg');
+            card.onclick = (e) => zoomIn(e, g);   // 카드를 누르면 "그 세트 전체"로 줌인
+            mk('div', 'pin pin-' + (c.pin || (i % 2 ? 'green' : 'blue')), card);
+            const img = mk('img', null, card);
+            img.src = c.img; img.draggable = false; img.alt = c.title || '';
+            const cap = mk('div', 'caption', card);
+            mk('div', 'caption-title', cap, c.title || '');
+            mk('div', 'caption-desc', cap, c.desc || '');
+        });
+
+        // 압정/그림자가 튀어나온 만큼 여유를 더한다
+        const pad = 14;
+        minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+        const local = { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY,
+                        cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };   // cx, cy = 박스 중심
+
+        // 색연필 원(낙서)용 투명 앵커: 카드들을 감싸는 박스.
+        // 그룹 "안"에 두므로 그룹의 scale 을 그대로 따라간다.
+        const anchor = mk('div', 'annotation-anchor', g);
+        Object.assign(anchor.style, { position: 'absolute', pointerEvents: 'none',
+            left: minX + 'px', top: minY + 'px', width: local.w + 'px', height: local.h + 'px' });
+        const annotation = RoughNotation.annotate(anchor, { type: 'circle', color: '#ff4d4d', strokeWidth: 8, padding: 24 });
+        allAnnotations.push(annotation);
+
+        // 마우스를 올리면 원을 그리고, 벗어나면 지움 (줌 중/모바일에서는 안 그림)
+        g.addEventListener('mouseenter', () => { if (!board.classList.contains('zoomed') && !isZooming && !isMobile()) annotation.show(); });
+        g.addEventListener('mouseleave', () => annotation.hide());
+
+        groups.push({ el: g, local, boxes, vis: null, rects: [] });   // vis, rects 는 layout()에서 채움
+    });
+}
+
+/* ======================================================================
+ *  2) 프리셋이 없는 세트 개수용 자동 배치 (엇갈린 격자 + 살짝 흩뜨림)
+ *     반환: 세트별 [x, y] (0~1 비율)
+ * ====================================================================== */
+function autoLayout(N, availW, availH, maxW, maxH) {
+    // 열 수를 1..N 으로 바꿔 보며 카드가 가장 크게 보이는 격자(열x행)를 고른다
+    let best = { s: 0, cols: 1, rows: N };
+    for (let cols = 1; cols <= N; cols++) {
+        const rows = Math.ceil(N / cols);
+        const s = Math.min((availW / cols) / maxW, (availH / rows) / maxH);
+        if (s > best.s + 1e-6) best = { s, cols, rows };
+    }
+    const { cols, rows } = best;
+    const rand = rng(CONFIG.seed + 99);
+    const out = [];
+    for (let i = 0; i < N; i++) {
+        const row = Math.floor(i / cols), col = i % cols;
+        const inRow = row === rows - 1 ? N - row * cols : cols;   // 마지막 줄은 가운데 정렬
+        let fx = 0.5 + (col - (inRow - 1) / 2) / cols;
+        let fy = (row + 0.5) / rows;
+        fy += (col % 2 ? 0.1 : -0.1) / rows;                      // 열마다 위아래로 지그재그
+        fx += (rand() - 0.5) * 0.15 / cols;                       // 살짝 흩뜨려 자연스럽게
+        fy += (rand() - 0.5) * 0.15 / rows;
+        out.push([fx, fy]);
+    }
+    return out;
+}
+
+/* ======================================================================
+ *  3) 화면 크기에 맞춘 배치 (로드 시 + 창 크기 바뀔 때마다 실행)
+ *     좌표계: 보드 좌표. 화면 중앙 영역의 왼쪽 위 = (ox, oy) = (vw, vh)
+ * ====================================================================== */
+function layout() {
+    const header = document.getElementById('header');
+    const qr = document.getElementById('qr');
+    const stickers = document.getElementById('stickers');
+
+    // 초기화: 이전 스티커 제거, 낙서 숨김, 줌 해제
+    stickers.innerHTML = '';
+    hideAllAnnotations();
+    board.classList.remove('zoomed');
+    board.style.transform = '';
+
+    // 모바일은 CSS 세로 나열을 쓰므로 JS가 넣었던 인라인 좌표만 지우고 끝
+    if (isMobile()) {
+        [header, qr, ...groups.map(g => g.el)].forEach(e => { e.style.cssText = ''; });
+        return;
+    }
+
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const ox = vw, oy = vh;                                    // 기본 화면 영역의 시작점(보드 좌표)
+    const m  = Math.max(12, Math.min(vw, vh) * 0.03);          // 화면 바깥 여백
+    const hs = clamp(Math.min(vw / 1500, vh / 850), 0.35, 1.3); // UI 배율: 1920x1080 근처에서 1
+    document.documentElement.style.setProperty('--hs', hs);
+
+    /* --- (a) 상단 한 줄: [ 제목 메모지 | QR ] 를 가운데 정렬 --- */
+    const qrSize = 150 * hs, gap = m;
+    const headerH = 100 * hs;
+    const headerW = Math.min(1000 * hs, vw - 2 * m - gap - qrSize);   // 화면이 좁으면 제목이 줄어듦
+    const rowW = headerW + gap + qrSize;
+    const rowH = Math.max(headerH, qrSize);
+    const x0 = ox + (vw - rowW) / 2, y0 = oy + m;
+    Object.assign(header.style, { left: x0 + 'px', top: (y0 + (rowH - headerH) / 2) + 'px', width: headerW + 'px', height: headerH + 'px' });
+    Object.assign(qr.style, { left: (x0 + headerW + gap) + 'px', top: (y0 + (rowH - qrSize) / 2) + 'px', width: qrSize + 'px', height: qrSize + 'px' });
+    qr._vis = { cx: x0 + headerW + gap + qrSize / 2, cy: y0 + rowH / 2, w: qrSize, h: qrSize };   // 줌 중심 계산용
+
+    /* --- (b) 카드 세트 배치 영역 = 상단 줄 아래 ~ 화면 아래 --- */
+    const availTop = m + rowH + m;
+    const availW = vw - 2 * m, availH = vh - availTop - m;
+    const N = groups.length;
+
+    if (N) {
+        const maxW = Math.max(...groups.map(g => g.local.w));
+        const maxH = Math.max(...groups.map(g => g.local.h));
+
+        // 1) 각 세트의 중심 위치(0~1): 세트별 pos > 개수별 프리셋 [5] > 자동 격자
+        const base = (LAYOUTS[N] && LAYOUTS[N].length === N) ? LAYOUTS[N] : autoLayout(N, availW, availH, maxW, maxH);
+        const fr = base.map((p, i) => CARD_SETS[i].pos || p);
+
+        // 2) 서로 안 겹치고 영역 안에 들어오는 "최대 배율 s" 계산
+        const slack = m * 0.6;     // 가장자리 여백을 조금 더 활용
+        const OVERLAP = 0.9;       // 회전된 사각형의 빈 모서리를 감안해 약간의 겹침 허용 (1이면 엄격)
+        let s = Infinity;
+        fr.forEach(([fx, fy], i) => {
+            const w = groups[i].local.w, h = groups[i].local.h;
+            // 영역 경계 제한: 세트의 절반 크기가 중심에서 가장자리까지 거리를 넘지 않게
+            s = Math.min(s,
+                (fx * availW + slack) / (w / 2), ((1 - fx) * availW + slack) / (w / 2),
+                (fy * availH + slack) / (h / 2), ((1 - fy) * availH + slack) / (h / 2));
+            // 세트 간 겹침 제한: 가로 또는 세로 중 한 방향만 떨어져 있으면 안 겹침
+            for (let j = i + 1; j < N; j++) {
+                const dx = Math.abs(fx - fr[j][0]) * availW, dy = Math.abs(fy - fr[j][1]) * availH;
+                const rx = dx / ((w + groups[j].local.w) / 2), ry = dy / ((h + groups[j].local.h) / 2);
+                s = Math.min(s, Math.max(rx, ry) / OVERLAP);
+            }
+        });
+        s = Math.min(s * 0.97, 1.5);    // 약간 여유를 두고, 큰 화면에서도 1.5배까지만
+
+        // 3) 실제 배치: 그룹 "중심"이 목표 위치(cx, cy)에 오도록 left/top 을 역산
+        groups.forEach((g, i) => {
+            const cx = ox + m + fr[i][0] * availW;
+            const cy = oy + availTop + fr[i][1] * availH;
+            g.el.style.left = (cx - s * g.local.cx) + 'px';
+            g.el.style.top  = (cy - s * g.local.cy) + 'px';
+            g.el.style.transform = `scale(${s})`;
+            g.vis = { cx, cy, w: g.local.w * s, h: g.local.h * s };   // 줌 중심/크기 계산에 사용
+            // 카드별 점유 사각형을 보드 좌표로 변환 (그룹 좌상단 + 배율 * 그룹 내부 좌표)
+            const gl = cx - s * g.local.cx, gt = cy - s * g.local.cy;
+            g.rects = g.boxes.map(b => ({ x: gl + s * (b.cx - b.hw), y: gt + s * (b.cy - b.hh), w: s * 2 * b.hw, h: s * 2 * b.hh }));
+        });
+    }
+
+    /* --- (c) 스티커 --- */
+    if (STICKERS.length) {
+        const rand = rng(CONFIG.seed);
+        const placed = [];   // 이미 놓은 스티커 사각형 (빈 공간 스티커끼리/가장자리 스티커와 안 겹치게)
+
+        // 스티커 하나를 만들어 stickers 칸에 넣는 도우미 (SVG 또는 이미지)
+        const makeSticker = (def, sw) => {
+            const st = mk('div', 'sticker', stickers);
+            st.style.width = sw + 'px';
+            if (def.svg) st.innerHTML = def.svg;
+            else if (def.img) { const im = mk('img', null, st); im.src = def.img; im.alt = def.name || ''; }
+            return st;
+        };
+
+        // (c-1) 가장자리 스티커: 좌/우/하단 가장자리에 붙임. 카드나 화면 끝에 겹쳐 일부가 가려질 수 있음
+        const edgeCount = CONFIG.stickerCount != null ? CONFIG.stickerCount : clamp(Math.round(N * 3 + 4), 6, 24);
+        for (let k = 0; k < edgeCount; k++) {
+            const def = STICKERS[Math.floor(rand() * STICKERS.length)];   // 목록에서 무작위 선택
+            const side = k % 3;                                           // 0: 왼쪽, 1: 오른쪽, 2: 아래쪽 가장자리
+            const sw = (def.width || 50) * hs;                            // 화면 크기에 맞춘 너비
+            const st = makeSticker(def, sw);
+            let x, y;
+            if (side === 0)      { x = ox + m * 0.15 + rand() * m * 0.3;               y = oy + availTop + rand() * Math.max(0, availH - sw); }
+            else if (side === 1) { x = ox + vw - sw - m * 0.15 - rand() * m * 0.3;     y = oy + availTop + rand() * Math.max(0, availH - sw); }
+            else                 { x = ox + m + rand() * Math.max(0, vw - 2 * m - sw); y = oy + vh - sw - m * 0.1 - rand() * m * 0.3; }
+            st.style.left = x + 'px';
+            st.style.top  = y + 'px';
+            st.style.transform = `rotate(${Math.round(rand() * 30 - 15)}deg)`;   // -15°~15° 무작위 기울기
+            placed.push({ x, y, w: sw, h: sw });
+        }
+
+        // (c-2) 빈 공간 스티커: 카드/제목/QR/다른 스티커를 피해 "비어 있는 자리"에만 놓음
+        const freeCount = CONFIG.stickerFreeCount != null ? CONFIG.stickerFreeCount : 8;
+        // 피해야 할 사각형 목록: 제목 메모지, QR, 모든 카드
+        const obstacles = [
+            { x: x0, y: y0 + (rowH - headerH) / 2, w: headerW, h: headerH },
+            { x: x0 + headerW + gap, y: y0 + (rowH - qrSize) / 2, w: qrSize, h: qrSize },
+            ...groups.flatMap(g => g.rects)
+        ];
+        // 두 사각형이 (여백 pad 포함) 겹치는지
+        const hit = (a, b, pad) => a.x < b.x + b.w + pad && a.x + a.w + pad > b.x && a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;
+
+        for (let k = 0; k < freeCount; k++) {
+            const def = STICKERS[Math.floor(rand() * STICKERS.length)];
+            const sw = (def.width || 50) * hs;
+            // 무작위 위치를 최대 80번 시도해서 처음으로 안 겹치는 자리를 사용 (못 찾으면 이 스티커는 생략)
+            for (let tries = 0; tries < 80; tries++) {
+                const box = { x: ox + m * 0.5 + rand() * Math.max(0, vw - m - sw),
+                              y: oy + m * 0.5 + rand() * Math.max(0, vh - m - sw), w: sw, h: sw };
+                const gapPx = 8 * hs;   // 다른 물체와 최소 간격
+                if (obstacles.some(o => hit(box, o, gapPx)) || placed.some(o => hit(box, o, gapPx))) continue;
+                const st = makeSticker(def, sw);
+                st.style.left = box.x + 'px';
+                st.style.top  = box.y + 'px';
+                st.style.transform = `rotate(${Math.round(rand() * 30 - 15)}deg)`;
+                placed.push(box);
+                break;
+            }
+        }
+    }
+}
+
+/* ======================================================================
+ *  4) 줌인 / 줌아웃
+ * ====================================================================== */
+function hideAllAnnotations() { allAnnotations.forEach(a => a.hide()); }
+
+// 카드 세트(.group) 또는 QR(.qr-section)을 누르면 화면 중앙으로 확대
+function zoomIn(event, element) {
+    event.stopPropagation();       // 보드의 onclick(resetZoom)이 같이 실행되지 않도록
+    if (isMobile()) return;        // 모바일은 줌 없음
+    hideAllAnnotations();
+
+    // 선택한 요소만 맨 위로, 설명글은 선택한 세트에만 표시(.active-zoom)
+    document.querySelectorAll('.group, .qr-section').forEach(g => { g.classList.remove('active-zoom'); g.style.zIndex = '10'; });
+    element.classList.add('active-zoom');
+    element.style.zIndex = '100';
+
+    // 확대 중심/크기: layout()이 계산해 둔 값(vis)을 사용
+    const vis = element.classList.contains('group') ? groups.find(g => g.el === element).vis : element._vis;
+    if (!vis) return;
+
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let zoom;
+    if (element.classList.contains('group')) {
+        // 세트가 화면의 zoomFill 비율을 채우도록 배율 자동 계산 → 해상도가 낮아 세트가 작을수록 더 크게 확대
+        zoom = Math.min(vw * CONFIG.zoomFill / vis.w, vh * CONFIG.zoomFill / vis.h);
+        zoom = clamp(zoom, 1, CONFIG.maxZoom);
+    } else {
+        zoom = clamp(Math.min(vw, vh) * 0.55 / vis.w, 1, 5);   // QR은 스캔하기 좋게 크게
+    }
+
+    // 이동량: 보드는 left:-100vw / top:-100vh 이므로 화면 중앙은 보드 좌표 (1.5vw, 1.5vh).
+    // transform-origin 을 확대 중심에 두면 scale 은 그 점을 고정하므로, 그 점을 화면 중앙으로 옮기는 translate 만 더하면 된다.
+    const dx = 1.5 * vw - vis.cx, dy = 1.5 * vh - vis.cy;
+    board.style.transformOrigin = `${vis.cx}px ${vis.cy}px`;
+    board.style.transform = `translate(${dx}px, ${dy}px) scale(${zoom})`;
+    board.classList.add('zoomed');
+    isZooming = true;
+}
+
+// 빈 배경 클릭(또는 Esc) → 줌아웃
+function resetZoom(event) {
+    if (!board.classList.contains('zoomed')) return;                                   // 줌인 상태가 아니면 무시
+    if (event && event.target && (event.target.closest('.photo-card') || event.target.closest('.qr-section'))) return;  // 카드/QR 클릭은 무시
+
+    document.querySelectorAll('.group, .qr-section').forEach(g => { g.style.zIndex = '10'; g.classList.remove('active-zoom'); });
+    hideAllAnnotations();
+    board.style.transform = '';
+    board.classList.remove('zoomed');
+    // 줌아웃 애니메이션 동안(0.5초)은 호버 낙서가 튀어나오지 않게 잠금 유지
+    isZooming = true;
+    setTimeout(() => { isZooming = false; }, 500);
+}
+
+/* ======================================================================
+ *  5) 초기화 & 이벤트
+ * ====================================================================== */
+build();     // 데이터로 DOM 생성
+layout();    // 화면 크기에 맞춰 배치
+
+// 창 크기가 바뀌면(발표 화면 전환 등) 다시 배치. 연속 호출을 막기 위해 150ms 디바운스
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(layout, 150); });
+// Esc 키로도 줌아웃
+window.addEventListener('keydown', e => { if (e.key === 'Escape') resetZoom(); });
+</script>
+</body>
+</html>
